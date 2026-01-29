@@ -1,0 +1,15 @@
+services:
+  frankenphp:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: symfony-start
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./app:/app
+    environment:
+      - APP_ENV=dev
+      - APP_DEBUG=1
+    command: ["frankenphp", "run", "--config", "/app/Caddyfile"]
