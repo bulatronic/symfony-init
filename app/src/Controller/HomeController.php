@@ -104,11 +104,11 @@ final readonly class HomeController
                 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
                 <script>
                     document.getElementById('form').addEventListener('submit', function(e) {
-                        var btn = document.getElementById('btn');
-                        var hint = document.getElementById('hint');
+                        const btn = document.getElementById('btn');
+                        const hint = document.getElementById('hint');
                         btn.disabled = true;
                         hint.textContent = 'Generating…';
-                        window.location.href = '/generate?' + new URLSearchParams(new FormData(this)).toString();
+                        window.location.href = '/generate?' + new URLSearchParams([...new FormData(this)]).toString();
                         setTimeout(function() { btn.disabled = false; hint.textContent = ''; }, 5000);
                     });
                 </script>
