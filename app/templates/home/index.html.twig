@@ -1,0 +1,165 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+<main class="container py-4 flex-grow-1">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <p class="text-muted text-center mb-4 lead">Generate a Symfony project with Docker</p>
+                    <form action="{{ path('app_generate') }}" method="get" id="form">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">Project name</label>
+                                <input type="text" name="name" id="name" class="form-control" 
+                                       placeholder="demo-symfony" pattern="[a-zA-Z0-9_-]+" 
+                                       maxlength="50" title="Letters, numbers, hyphen and underscore only">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="php" class="form-label">PHP version</label>
+                                <select name="php" id="php" class="form-select" required>
+                                    {% for version in php_versions %}
+                                        <option value="{{ version }}">PHP {{ version }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="server" class="form-label">Application server</label>
+                                <select name="server" id="server" class="form-select" required>
+                                    {% for key, label in servers %}
+                                        <option value="{{ key }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="symfony" class="form-label">Symfony version</label>
+                                <select name="symfony" id="symfony" class="form-select" required>
+                                    {% for key, label in symfony_versions %}
+                                        <option value="{{ key }}">Symfony {{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="database" class="form-label">Database</label>
+                            <select name="database" id="database" class="form-select">
+                                {% for key, label in databases %}
+                                    <option value="{{ key }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Extensions</label>
+                            <div class="row">
+                                {% for key, label in extensions %}
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input type="checkbox" name="extensions[]" id="ext_{{ key }}" 
+                                                   class="form-check-input" value="{{ key }}">
+                                            <label class="form-check-label" for="ext_{{ key }}">
+                                                {{ label }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" name="redis" id="redis" class="form-check-input" value="1">
+                                <label class="form-check-label" for="redis">
+                                    Include Redis cache
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" id="btn" class="btn btn-dark btn-lg">Generate project</button>
+                        <p class="form-text d-block mt-2 mb-0" id="hint" aria-live="polite"></p>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    document.getElementById('form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const form = this;
+        const btn = document.getElementById('btn');
+        const hint = document.getElementById('hint');
+
+        const params = new URLSearchParams();
+        const formData = new FormData(form);
+        for (const [key, value] of formData) {
+            if (key === 'extensions[]') {
+                params.append('extensions[]', value);
+            } else {
+                params.set(key, value);
+            }
+        }
+        const url = form.action + '?' + params.toString();
+
+        btn.disabled = true;
+        hint.textContent = 'Generating… This may take a few minutes.';
+        hint.classList.remove('text-danger');
+
+        fetch(url)
+            .then(function(res) {
+                if (!res.ok) {
+                    return res.text().then(function(text) {
+                        var err = new Error(text || 'Generation failed');
+                        try {
+                            var json = JSON.parse(text);
+                            if (json.error) err.userMessage = json.error;
+                            if (typeof json.retry_after_seconds === 'number') {
+                                err.retrySeconds = json.retry_after_seconds;
+                            }
+                        } catch (_) {}
+                        throw err;
+                    });
+                }
+                var disposition = res.headers.get('Content-Disposition');
+                return res.blob().then(function(blob) {
+                    return { blob: blob, disposition: disposition };
+                });
+            })
+            .then(function(data) {
+                var filename = 'project.zip';
+                if (data.disposition) {
+                    var m = data.disposition.match(/filename="?([^";\n]+)"?/);
+                    if (m) filename = m[1].trim();
+                }
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(data.blob);
+                a.download = filename;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(a.href);
+                hint.textContent = 'Download started.';
+            })
+            .catch(function(err) {
+                var msg = (err && err.userMessage) || (err && err.message) || 'Generation failed.';
+                if (err && typeof err.retrySeconds === 'number' && err.retrySeconds > 0) {
+                    var min = Math.ceil(err.retrySeconds / 60);
+                    msg += ' Try again in ' + min + ' minute(s).';
+                }
+                hint.textContent = msg;
+                hint.classList.add('text-danger');
+            })
+            .finally(function() {
+                btn.disabled = false;
+            });
+    });
+</script>
+{% endblock %}

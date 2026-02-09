@@ -1,13 +1,12 @@
 FROM php:{{ php_version }}-fpm
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     unzip \
-    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=mlocati/php-extension-installer:2 /usr/bin/install-php-extensions /usr/local/bin/
-RUN install-php-extensions zip opcache
+RUN set -eux; install-php-extensions {{ php_extensions }}
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 

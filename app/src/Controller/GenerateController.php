@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\GeneratorOptions;
 use App\Service\ProjectGeneratorService;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -13,46 +14,112 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final readonly class GenerateController
 {
+    private const int STREAM_CHUNK_SIZE = 8192;
+
     public function __construct(
         private GeneratorOptions $options,
         private ProjectGeneratorService $generator,
+        private LoggerInterface $logger,
     ) {
     }
 
     #[Route(path: '/generate', name: 'app_generate', methods: ['GET'])]
     public function __invoke(Request $request): Response
     {
+        // Validate required parameters
         $php = $request->query->getString('php');
         $server = $request->query->getString('server');
         $symfony = $request->query->getString('symfony');
-        $name = $this->sanitizeProjectName($request->query->getString('name'));
 
-        if (!$this->options->isValidPhp($php) || !$this->options->isValidServer($server) || !$this->options->isValidSymfony($symfony)) {
+        if (!$this->options->isValidPhp($php)
+            || !$this->options->isValidServer($server)
+            || !$this->options->isValidSymfony($symfony)
+        ) {
+            $this->logger->warning('Invalid generation parameters', [
+                'php' => $php,
+                'server' => $server,
+                'symfony' => $symfony,
+            ]);
+
             return new Response('Invalid parameters', Response::HTTP_BAD_REQUEST);
         }
 
-        try {
-            $zipPath = $this->generator->generate($php, $server, $symfony, $name);
-        } catch (\Throwable $e) {
-            return new Response('Generation failed: '.$e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        // Optional parameters
+        $name = $this->sanitizeProjectName($request->query->getString('name', 'demo-symfony'));
+        $database = $request->query->getString('database', 'none');
+        $redis = $request->query->getBoolean('redis', false);
+        $extensions = $request->query->all('extensions') ?? [];
+
+        // Validate optional parameters
+        if (!$this->options->isValidDatabase($database)) {
+            $this->logger->warning('Invalid database parameter', ['database' => $database]);
+
+            return new Response('Invalid database', Response::HTTP_BAD_REQUEST);
         }
 
+        if (!$this->options->areValidExtensions($extensions)) {
+            $this->logger->warning('Invalid extensions', ['extensions' => $extensions]);
+
+            return new Response('Invalid extensions', Response::HTTP_BAD_REQUEST);
+        }
+
+        // Generation runs composer create-project, require, install — can take several minutes
+        set_time_limit(600);
+
+        // Generate project
+        try {
+            $startTime = microtime(true);
+            $zipPath = $this->generator->generate(
+                phpVersion: $php,
+                server: $server,
+                symfonyVersion: $symfony,
+                projectName: $name,
+                extensions: $extensions,
+                database: 'none' !== $database ? $database : null,
+                redis: $redis
+            );
+
+            $duration = microtime(true) - $startTime;
+            $this->logger->info('Project generated successfully', [
+                'duration' => round($duration, 2),
+                'php' => $php,
+                'server' => $server,
+                'symfony' => $symfony,
+            ]);
+        } catch (\Throwable $e) {
+            $this->logger->error('Project generation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return new Response(
+                'Generation failed: '.$e->getMessage(),
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
+        }
+
+        // Stream response with optimized chunk size
         $filename = $name.'.zip';
         $response = new StreamedResponse(function () use ($zipPath): void {
-            $handle = fopen($zipPath, 'rb');
+            $handle = @fopen($zipPath, 'rb');
             if (false === $handle) {
+                $this->logger->error('Failed to open zip file for streaming', ['path' => $zipPath]);
+
                 return;
             }
+
             try {
+                // Disable output buffering for better streaming
+                if (ob_get_level()) {
+                    ob_end_clean();
+                }
+
                 while (!feof($handle)) {
-                    $chunk = fread($handle, 8192);
-                    if (false !== $chunk) {
+                    $chunk = fread($handle, self::STREAM_CHUNK_SIZE);
+                    if (false !== $chunk && '' !== $chunk) {
                         echo $chunk;
+                        flush();
                     }
-                    if (ob_get_level()) {
-                        ob_flush();
-                    }
-                    flush();
                 }
             } finally {
                 fclose($handle);
@@ -61,17 +128,36 @@ final readonly class GenerateController
         });
 
         $response->headers->set('Content-Type', 'application/zip');
-        $response->headers->set('Content-Disposition', 'attachment; filename="'.$filename.'"');
-        $response->headers->set('Cache-Control', 'no-store');
+        $response->headers->set('Content-Disposition', sprintf('attachment; filename="%s"', $filename));
+        $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate');
+        $response->headers->set('Pragma', 'no-cache');
+
+        // Add file size if available
+        if (file_exists($zipPath)) {
+            $size = filesize($zipPath);
+            if (false !== $size) {
+                $response->headers->set('Content-Length', (string) $size);
+            }
+        }
 
         return $response;
     }
 
+    /**
+     * Sanitize project name using cleaner transformation chain.
+     */
     private function sanitizeProjectName(string $name): string
     {
-        $name = preg_replace('/[^a-zA-Z0-9_-]/', '-', $name);
-        $name = trim($name, '-');
+        // Remove invalid characters
+        $cleaned = preg_replace('/[^a-zA-Z0-9_-]/', '-', $name);
+        if (null === $cleaned) {
+            return 'demo-symfony';
+        }
 
-        return '' !== $name ? $name : 'demo-symfony';
+        // Remove leading/trailing dashes
+        $trimmed = trim($cleaned, '-');
+
+        // Ensure non-empty and reasonable length
+        return ('' === $trimmed || strlen($trimmed) > 50) ? 'demo-symfony' : $trimmed;
     }
 }

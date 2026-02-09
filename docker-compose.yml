@@ -3,7 +3,7 @@ services:
     build:
       context: ./app
       dockerfile: Dockerfile
-    container_name: symfony-start
+    container_name: symfony-init
     restart: unless-stopped
     ports:
       - "8080:80"

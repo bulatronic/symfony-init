@@ -1,0 +1,15 @@
+framework:
+    rate_limiter:
+        # Generator endpoint: 30 requests per hour per IP (was 10, too strict for normal use)
+        generator:
+            policy: 'sliding_window'
+            limit: 30
+            interval: '60 minutes'
+            lock_factory: 'lock.factory'
+
+        # API endpoint: 100 requests per hour per IP (if needed)
+        api:
+            policy: 'fixed_window'
+            limit: 100
+            interval: '60 minutes'
+            lock_factory: 'lock.factory'

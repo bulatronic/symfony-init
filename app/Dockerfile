@@ -1,12 +1,12 @@
 FROM dunglas/frankenphp:1-php8.5
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     unzip \
-    libzip-dev \
-    && docker-php-ext-install zip \
-    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# install-php-extensions is already in the base image
+RUN set -eux; install-php-extensions zip opcache
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
