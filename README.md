@@ -15,7 +15,7 @@
 
 Выберите нужные параметры проекта и получите ZIP-архив с готовым Symfony-приложением, которое можно сразу запустить с помощью `docker compose up`.
 
-<p align="center">
+<p style="text-align: center">
   <img src="docs/screenshot.png" alt="Главная страница Symfony Initializr" />
 </p>
 
@@ -73,7 +73,7 @@ php bin/console app:warm-cache
 
 Choose the required project options and receive a ZIP archive with a ready-to-run Symfony application that can be launched immediately using `docker compose up`.
 
-<p align="center">
+<p style="text-align: center">
   <img src="docs/screenshot.png" alt="Symfony Initializr main page" />
 </p>
 
