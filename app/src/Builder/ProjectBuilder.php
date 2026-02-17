@@ -100,6 +100,12 @@ final readonly class ProjectBuilder
         }
 
         $data['require']['php'] = '>='.$config->phpVersion;
+
+        // Composer schema requires require-dev to be an object {}; empty array [] is invalid
+        if (isset($data['require-dev']) && is_array($data['require-dev']) && empty($data['require-dev'])) {
+            $data['require-dev'] = new \stdClass();
+        }
+
         $encoded = json_encode($data, \JSON_PRETTY_PRINT | \JSON_UNESCAPED_SLASHES | \JSON_UNESCAPED_UNICODE);
         if (false === $encoded) {
             return;
