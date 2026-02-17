@@ -135,12 +135,12 @@ final class ProjectGeneratorService
 
             $this->runComposerInstall($tempDir);
 
-            // Store in cache directory
-            $cacheDir = $this->projectDir.'/var/cache/projects';
-            $this->ensureDirectory($cacheDir);
-            $cachedPath = $cacheDir.'/'.bin2hex(random_bytes(8));
+            // Store in share directory (shared between instances, Symfony 7.4+)
+            $shareDir = $this->projectDir.'/var/share/projects';
+            $this->ensureDirectory($shareDir);
+            $cachedPath = $shareDir.'/'.bin2hex(random_bytes(8));
 
-            // Move to cache using filesystem for better performance
+            // Move to share using filesystem for better performance
             $this->filesystem->rename($tempDir, $cachedPath);
 
             return $cachedPath;

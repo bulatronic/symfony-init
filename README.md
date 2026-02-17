@@ -29,7 +29,7 @@
 - **Redis**: опция «Include Redis cache» добавляет расширение PHP `redis` и переменную `REDIS_URL` в `.env`.
 - **Генерация**: скелет через `composer create-project`, подстановка Dockerfile (единый стиль, минимум слоёв), docker-compose, конфигурация веб-сервера (Nginx для FPM, Caddyfile для FrankenPHP). Если выбран Doctrine ORM и БД — рецепт добавляет сервис БД в docker-compose и при необходимости `DATABASE_URL` в `.env`; дубликаты не создаются.
 - **Скачивание**: кнопка «Generate project» блокируется до завершения запроса; архив скачивается через fetch (без перезагрузки страницы). При превышении лимита запросов показывается сообщение и время повтора.
-- **Кеширование**: результаты генерации кешируются по комбинации параметров (PHP, сервер, Symfony, расширения, БД, Redis), повторный запрос с теми же настройками отдаёт архив быстрее.
+- **Кеширование**: результаты генерации кешируются по комбинации параметров (PHP, сервер, Symfony, расширения, БД, Redis), повторный запрос с теми же настройками отдаёт архив быстрее. Используется `var/share/` директория (Symfony 7.4+) для application cache, что позволяет легко масштабировать на несколько инстансов.
 - **Лимит запросов**: 30 запросов в час на IP для эндпоинта генерации.
 
 ---
@@ -87,7 +87,7 @@ Choose the required project options and receive a ZIP archive with a ready-to-ru
 - **Redis**: the “Include Redis cache” option adds the PHP `redis` extension and `REDIS_URL` to `.env`.
 - **Generation**: skeleton via `composer create-project`, injection of a single-style minimal-layer Dockerfile, docker-compose, and web server config (Nginx for FPM, Caddyfile for FrankenPHP). If Doctrine ORM and a database are selected, the recipe adds the DB service to docker-compose and `DATABASE_URL` to `.env` when needed; duplicates are avoided.
 - **Download**: the “Generate project” button is disabled until the request completes; the archive is downloaded via fetch (no page reload). If the rate limit is exceeded, a message and retry time are shown.
-- **Caching**: generation results are cached by the combination of options (PHP, server, Symfony, extensions, database, Redis); repeated requests with the same options return the archive faster.
+- **Caching**: generation results are cached by the combination of options (PHP, server, Symfony, extensions, database, Redis); repeated requests with the same options return the archive faster. Uses `var/share/` directory (Symfony 7.4+) for application cache, making it easy to scale to multiple instances.
 - **Rate limit**: 30 requests per hour per IP for the generate endpoint.
 
 ---

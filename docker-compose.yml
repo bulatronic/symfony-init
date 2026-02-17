@@ -9,7 +9,11 @@ services:
       - "8080:80"
     volumes:
       - ./app:/app
+      - shared-data:/app/var/share  # Shared cache (persistent across restarts)
     environment:
       - APP_ENV=dev
       - APP_DEBUG=1
     command: ["frankenphp", "run", "--config", "/app/Caddyfile"]
+
+volumes:
+  shared-data:  # Persistent storage for application cache

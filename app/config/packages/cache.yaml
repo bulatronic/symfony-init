@@ -1,6 +1,8 @@
 framework:
     cache:
+        # Application cache in share directory (shared between instances)
         app: cache.adapter.filesystem
+        directory: '%kernel.share_dir%/pools'
 
         # Separate pool for generated projects with longer TTL
         pools:
