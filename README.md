@@ -68,6 +68,12 @@ docker compose exec frankenphp bash
 php bin/console app:warm-cache
 ```
 
+Сброс кеша сгенерированных проектов (пул cache.app):
+
+```bash
+php bin/console cache:pool:clear cache.app
+```
+
 ---
 
 <a id="english"></a>
@@ -127,4 +133,10 @@ To warm the PHP/Symfony version cache and generated project cache (optional):
 
 ```bash
 php bin/console app:warm-cache
+```
+
+To clear the generated project cache (cache.app pool):
+
+```bash
+php bin/console cache:pool:clear cache.app
 ```

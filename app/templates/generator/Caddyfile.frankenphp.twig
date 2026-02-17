@@ -8,13 +8,13 @@
     encode zstd br gzip
 
     php_server {
-        try_files {path} index.php
-    }
+                   try_files {path} index.php
+               }
 
     file_server
 
     log {
-        output stdout
-        format console
-    }
+            output stdout
+            format console
+        }
 }

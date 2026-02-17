@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Config\ProjectConfigFactory;
 use App\GeneratorOptions;
 use App\Service\ProjectGeneratorService;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -20,6 +21,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 final class WarmCacheCommand extends Command
 {
     public function __construct(
+        private readonly ProjectConfigFactory $configFactory,
         private readonly ProjectGeneratorService $generator,
         private readonly GeneratorOptions $options,
     ) {
@@ -59,23 +61,23 @@ final class WarmCacheCommand extends Command
                     $config['php'],
                     $config['server'],
                     $config['symfony'],
-                    $config['database'] ?? null ? ' + '.$config['database'] : '',
+                    ($config['database'] ?? null) ? ' + '.$config['database'] : '',
                     ($config['cache'] ?? null) ? ' + '.$config['cache'] : '',
                     ($config['rabbitmq'] ?? false) ? ' + RabbitMQ' : ''
                 ));
 
-                $zipPath = $this->generator->generate(
-                    phpVersion: $config['php'],
-                    server: $config['server'],
-                    symfonyVersion: $config['symfony'],
-                    projectName: 'cache-warmup',
-                    extensions: $config['extensions'] ?? [],
-                    database: $config['database'] ?? null,
-                    cache: $config['cache'] ?? null,
-                    rabbitmq: $config['rabbitmq'] ?? false
+                $projectConfig = $this->configFactory->fromRequest(
+                    $config['php'],
+                    $config['server'],
+                    $config['symfony'],
+                    'cache-warmup',
+                    $config['database'] ?? 'none',
+                    $config['cache'] ?? 'none',
+                    $config['rabbitmq'] ?? false,
+                    $config['extensions'] ?? [],
                 );
 
-                // Clean up the zip file immediately
+                $zipPath = $this->generator->generate($projectConfig);
                 @unlink($zipPath);
 
                 ++$successCount;
@@ -104,8 +106,6 @@ final class WarmCacheCommand extends Command
     }
 
     /**
-     * Get popular configurations for quick cache warming (5–6 variants).
-     *
      * @return array<int, array<string, mixed>>
      */
     private function getPopularConfigurations(): array
@@ -151,9 +151,6 @@ final class WarmCacheCommand extends Command
     }
 
     /**
-     * All combinations of PHP × Symfony × server (no DB/extensions/redis).
-     * Full matrix would be too large (PHP × Symfony × server × DB × redis × extensions).
-     *
      * @return array<int, array<string, mixed>>
      */
     private function getAllConfigurations(): array

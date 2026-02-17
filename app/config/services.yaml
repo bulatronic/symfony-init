@@ -19,5 +19,10 @@ services:
     App\:
         resource: '../src/'
 
+    # All ExtensionInterface implementations get the app.extension tag automatically
+    _instanceof:
+        App\Extension\ExtensionInterface:
+            tags: ['app.extension']
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

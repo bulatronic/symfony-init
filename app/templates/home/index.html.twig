@@ -286,7 +286,10 @@
                                 if (apiError) message = apiError;
                                 if (retryAfter > 0) retrySeconds = retryAfter;
                             } catch (parseErr) {
-                                // server returned non-JSON response, use default message
+                                // Plain text error (e.g. 500 from backend) — show server message
+                                if (text && text.trim().length > 0) {
+                                    message = text.trim();
+                                }
                             }
 
                             if (retrySeconds > 0) {

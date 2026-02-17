@@ -181,9 +181,9 @@ final readonly class VersionProviderService
     private function extractSymfonyVersions(array $data): array
     {
         // New API format: single object with symfony_versions, supported_versions etc
-        if (isset($data['symfony_versions']['lts']) && isset($data['supported_versions'])) {
-            $versions = [];
-            $ltsVersion = $data['symfony_versions']['lts'] ?? '';
+        $versions = [];
+        if (isset($data['symfony_versions']['lts'], $data['supported_versions'])) {
+            $ltsVersion = (string) $data['symfony_versions']['lts'];
             $ltsMajorMinor = implode('.', array_slice(explode('.', $ltsVersion), 0, 2));
 
             // Get supported versions
@@ -212,7 +212,6 @@ final readonly class VersionProviderService
         }
 
         // Fallback: try old format (array of objects with version keys)
-        $versions = [];
         foreach ($data as $version => $info) {
             if (!is_string($version) || !is_array($info)) {
                 continue;

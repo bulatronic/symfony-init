@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App;
 
+use App\Extension\ExtensionRegistry;
 use App\Service\VersionProviderService;
 use Psr\Cache\InvalidArgumentException;
 
@@ -88,20 +89,12 @@ final class GeneratorOptions
     }
 
     /**
+     * Extension labels from the registry (single source of truth).
+     *
      * @var array<string, string>
      */
     public array $extensions {
-        get => [
-            'orm' => 'Doctrine ORM',
-            'security' => 'Security',
-            'mailer' => 'Mailer',
-            'messenger' => 'Messenger',
-            'validator' => 'Validator',
-            'serializer' => 'Serializer',
-            'api-platform' => 'API Platform',
-            'http-client' => 'HTTP Client',
-            'nelmio-api-doc' => 'Nelmio API Doc',
-        ];
+        get => $this->registry->getLabels();
     }
 
     /**
@@ -117,6 +110,7 @@ final class GeneratorOptions
 
     public function __construct(
         private readonly VersionProviderService $versionProvider,
+        private readonly ExtensionRegistry $registry,
     ) {
     }
 
@@ -196,12 +190,10 @@ final class GeneratorOptions
     }
 
     /**
-     * Validate array of extensions using PHP 8.4 array_all().
-     *
      * @param list<string> $extensions
      */
     public function areValidExtensions(array $extensions): bool
     {
-        return array_all($extensions, fn (string $ext): bool => isset($this->extensions[$ext]));
+        return array_all($extensions, fn (string $ext): bool => $this->registry->has($ext));
     }
 }
