@@ -24,6 +24,7 @@ final class HomeController extends AbstractController
             'servers' => $this->options->servers,
             'symfony_versions' => $this->options->symfonyVersions,
             'databases' => $this->options->databases,
+            'caches' => $this->options->caches,
             'extensions' => $this->options->extensions,
         ]);
     }

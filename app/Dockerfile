@@ -6,7 +6,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # install-php-extensions is already in the base image
-RUN set -eux; install-php-extensions zip opcache
+# amqp needed so Composer can resolve/install projects with RabbitMQ (symfony/amqp-messenger)
+RUN set -eux; install-php-extensions zip opcache amqp
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 

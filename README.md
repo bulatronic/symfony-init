@@ -13,7 +13,9 @@
 
 ## Веб-сервис генерации Symfony-проектов с Docker
 
-Выберите нужные параметры проекта и получите ZIP-архив с готовым Symfony-приложением, которое можно сразу запустить с помощью `docker compose up`.
+Выберите параметры проекта и получите ZIP с готовым Symfony-приложением под Docker. Запуск: `docker compose up`.
+
+**Скриншот интерфейса**
 
 <p style="text-align: center">
   <img src="docs/screenshot.png" alt="Главная страница Symfony Initializr" />
@@ -23,14 +25,15 @@
 
 ## Возможности
 
-- **Параметры проекта**: имя, версия PHP, сервер приложений (PHP-FPM + Nginx или FrankenPHP), версия Symfony (LTS и текущие — подгружаются с symfony.com).
-- **База данных**: без БД, PostgreSQL, MySQL, MariaDB или SQLite. В Dockerfile автоматически подставляются нужные PHP-расширения (pdo_pgsql, pdo_mysql, pdo_sqlite).
-- **Расширения Symfony**: Doctrine ORM, Mailer, Messenger, Security, Validator, Serializer — устанавливаются через `composer require` с версией, совместимой с выбранной версией Symfony.
-- **Redis**: опция «Include Redis cache» добавляет расширение PHP `redis` и переменную `REDIS_URL` в `.env`.
-- **Генерация**: скелет через `composer create-project`, подстановка Dockerfile (единый стиль, минимум слоёв), docker-compose, конфигурация веб-сервера (Nginx для FPM, Caddyfile для FrankenPHP). Если выбран Doctrine ORM и БД — рецепт добавляет сервис БД в docker-compose и при необходимости `DATABASE_URL` в `.env`; дубликаты не создаются.
-- **Скачивание**: кнопка «Generate project» блокируется до завершения запроса; архив скачивается через fetch (без перезагрузки страницы). При превышении лимита запросов показывается сообщение и время повтора.
-- **Кеширование**: результаты генерации кешируются по комбинации параметров (PHP, сервер, Symfony, расширения, БД, Redis), повторный запрос с теми же настройками отдаёт архив быстрее. Используется `var/share/` директория (Symfony 7.4+) для application cache, что позволяет легко масштабировать на несколько инстансов.
-- **Лимит запросов**: 30 запросов в час на IP для эндпоинта генерации.
+- **Параметры**: имя проекта, PHP, сервер (PHP-FPM + Nginx или FrankenPHP), версия Symfony (LTS и текущие — с symfony.com).
+- **База данных**: без БД, PostgreSQL, MySQL, MariaDB, SQLite. Связка с чекбоксом Doctrine ORM: выбор БД включает ORM, выбор ORM подставляет PostgreSQL при «без БД». В Docker — образы на Alpine где есть (postgres, redis, memcached, rabbitmq).
+- **Кеш**: селект None / Redis / Memcached. В проект добавляются контейнер, PHP-расширение и `CACHE_DSN` в `.env`.
+- **Расширения**: Doctrine ORM, Security, Mailer, Messenger, Validator, Serializer, API Platform, HTTP Client, Nelmio API Doc. Зависимости подставляются автоматически (API Platform → ORM + Serializer + Nelmio; RabbitMQ → Messenger).
+- **Message broker**: опция RabbitMQ — контейнер RabbitMQ с management и `MESSENGER_TRANSPORT_DSN` в `.env`.
+- **Генерация**: скелет через `composer create-project`, подстановка Dockerfile, docker-compose, конфиг веб-сервера (Nginx / Caddyfile). Рецепты Flex не дублируют наши сервисы (`SYMFONY_SKIP_DOCKER=1`, очистка блоков рецептов в compose).
+- **Скачивание**: кнопка блокируется до ответа, архив через fetch. При лимите — сообщение и время повтора.
+- **Кеширование**: по комбинации параметров (PHP, сервер, Symfony, расширения, БД, кеш, RabbitMQ). Кеш в `var/share/` (Symfony 7.4+).
+- **Лимит**: 30 запросов в час на IP.
 
 ---
 
@@ -71,7 +74,9 @@ php bin/console app:warm-cache
 
 ## Web Service for Generating Symfony Projects with Docker
 
-Choose the required project options and receive a ZIP archive with a ready-to-run Symfony application that can be launched immediately using `docker compose up`.
+Pick project options and get a ZIP with a ready-to-run Symfony app for Docker. Run with `docker compose up`.
+
+**Interface screenshot**
 
 <p style="text-align: center">
   <img src="docs/screenshot.png" alt="Symfony Initializr main page" />
@@ -81,14 +86,15 @@ Choose the required project options and receive a ZIP archive with a ready-to-ru
 
 ## Features
 
-- **Project parameters**: name, PHP version, application server (PHP-FPM + Nginx or FrankenPHP), Symfony version (LTS and current — fetched from symfony.com).
-- **Database**: none, PostgreSQL, MySQL, MariaDB, or SQLite. The generated Dockerfile includes the matching PHP extensions (pdo_pgsql, pdo_mysql, pdo_sqlite).
-- **Symfony extensions**: Doctrine ORM, Mailer, Messenger, Security, Validator, Serializer — installed via `composer require` with versions compatible to the selected Symfony version.
-- **Redis**: the “Include Redis cache” option adds the PHP `redis` extension and `REDIS_URL` to `.env`.
-- **Generation**: skeleton via `composer create-project`, injection of a single-style minimal-layer Dockerfile, docker-compose, and web server config (Nginx for FPM, Caddyfile for FrankenPHP). If Doctrine ORM and a database are selected, the recipe adds the DB service to docker-compose and `DATABASE_URL` to `.env` when needed; duplicates are avoided.
-- **Download**: the “Generate project” button is disabled until the request completes; the archive is downloaded via fetch (no page reload). If the rate limit is exceeded, a message and retry time are shown.
-- **Caching**: generation results are cached by the combination of options (PHP, server, Symfony, extensions, database, Redis); repeated requests with the same options return the archive faster. Uses `var/share/` directory (Symfony 7.4+) for application cache, making it easy to scale to multiple instances.
-- **Rate limit**: 30 requests per hour per IP for the generate endpoint.
+- **Parameters**: project name, PHP version, server (PHP-FPM + Nginx or FrankenPHP), Symfony version (LTS and current, from symfony.com).
+- **Database**: none, PostgreSQL, MySQL, MariaDB, SQLite. UI syncs with Doctrine ORM: choosing a DB checks ORM; checking ORM selects PostgreSQL when DB is none. Docker uses Alpine-based images where available (postgres, redis, memcached, rabbitmq).
+- **Cache**: selector None / Redis / Memcached. Adds the container, PHP extension, and `CACHE_DSN` in `.env`.
+- **Extensions**: Doctrine ORM, Security, Mailer, Messenger, Validator, Serializer, API Platform, HTTP Client, Nelmio API Doc. Dependencies are auto-selected (API Platform → ORM + Serializer + Nelmio; RabbitMQ → Messenger).
+- **Message broker**: RabbitMQ option adds the RabbitMQ container with management UI and `MESSENGER_TRANSPORT_DSN` in `.env`.
+- **Generation**: skeleton via `composer create-project`, Dockerfile and docker-compose injection, web server config (Nginx / Caddyfile). Flex recipes do not duplicate our services (`SYMFONY_SKIP_DOCKER=1`, recipe blocks stripped from compose).
+- **Download**: button disabled until response; archive via fetch. Rate limit shows message and retry time.
+- **Caching**: by parameter set (PHP, server, Symfony, extensions, database, cache, RabbitMQ). Cache in `var/share/` (Symfony 7.4+).
+- **Rate limit**: 30 requests per hour per IP.
 
 ---
 

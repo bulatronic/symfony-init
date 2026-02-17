@@ -53,14 +53,15 @@ final class WarmCacheCommand extends Command
         foreach ($configs as $index => $config) {
             try {
                 $io->writeln(sprintf(
-                    "\n  [%d/%d] PHP %s + %s + Symfony %s%s%s",
+                    "\n  [%d/%d] PHP %s + %s + Symfony %s%s%s%s",
                     $index + 1,
                     count($configs),
                     $config['php'],
                     $config['server'],
                     $config['symfony'],
                     $config['database'] ?? null ? ' + '.$config['database'] : '',
-                    ($config['redis'] ?? false) ? ' + Redis' : ''
+                    ($config['cache'] ?? null) ? ' + '.$config['cache'] : '',
+                    ($config['rabbitmq'] ?? false) ? ' + RabbitMQ' : ''
                 ));
 
                 $zipPath = $this->generator->generate(
@@ -70,7 +71,8 @@ final class WarmCacheCommand extends Command
                     projectName: 'cache-warmup',
                     extensions: $config['extensions'] ?? [],
                     database: $config['database'] ?? null,
-                    redis: $config['redis'] ?? false
+                    cache: $config['cache'] ?? null,
+                    rabbitmq: $config['rabbitmq'] ?? false
                 );
 
                 // Clean up the zip file immediately
@@ -137,7 +139,7 @@ final class WarmCacheCommand extends Command
                 'server' => 'frankenphp',
                 'symfony' => $latestSymfony,
                 'database' => 'postgresql',
-                'redis' => true,
+                'cache' => 'redis',
                 'extensions' => ['orm', 'security', 'mailer'],
             ],
             [

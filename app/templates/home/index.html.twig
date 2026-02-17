@@ -1,165 +1,333 @@
 {% extends 'base.html.twig' %}
 
+{% block stylesheets %}
+    <style>
+        /* Style for auto-included dependencies */
+        .form-check-input:disabled:checked {
+            opacity: 0.8;
+            cursor: not-allowed;
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+
+        .form-check:has(input:disabled) label {
+            opacity: 0.8;
+            cursor: not-allowed;
+            color: #6c757d;
+        }
+
+        .form-check:has(input:disabled) .badge {
+            opacity: 1;
+        }
+    </style>
+{% endblock %}
+
 {% block body %}
-<main class="container py-4 flex-grow-1">
-    <div class="row justify-content-center">
-        <div class="col-md-10 col-lg-8">
-            <div class="card shadow-sm">
-                <div class="card-body p-4">
-                    <p class="text-muted text-center mb-4 lead">Generate a Symfony project with Docker</p>
-                    <form action="{{ path('app_generate') }}" method="get" id="form">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="name" class="form-label">Project name</label>
-                                <input type="text" name="name" id="name" class="form-control" 
-                                       placeholder="demo-symfony" pattern="[a-zA-Z0-9_-]+" 
-                                       maxlength="50" title="Letters, numbers, hyphen and underscore only">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="php" class="form-label">PHP version</label>
-                                <select name="php" id="php" class="form-select" required>
-                                    {% for version in php_versions %}
-                                        <option value="{{ version }}">PHP {{ version }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="server" class="form-label">Application server</label>
-                                <select name="server" id="server" class="form-select" required>
-                                    {% for key, label in servers %}
-                                        <option value="{{ key }}">{{ label }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="symfony" class="form-label">Symfony version</label>
-                                <select name="symfony" id="symfony" class="form-select" required>
-                                    {% for key, label in symfony_versions %}
-                                        <option value="{{ key }}">Symfony {{ label }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="database" class="form-label">Database</label>
-                            <select name="database" id="database" class="form-select">
-                                {% for key, label in databases %}
-                                    <option value="{{ key }}">{{ label }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Extensions</label>
+    <main class="container py-4 flex-grow-1">
+        <div class="row justify-content-center">
+            <div class="col-md-10 col-lg-8">
+                <div class="card shadow-sm">
+                    <div class="card-body p-4">
+                        <p class="text-muted text-center mb-4 lead">Generate a Symfony project with Docker</p>
+                        <form action="{{ path('app_generate') }}" method="get" id="form">
                             <div class="row">
-                                {% for key, label in extensions %}
-                                    <div class="col-md-6">
-                                        <div class="form-check">
-                                            <input type="checkbox" name="extensions[]" id="ext_{{ key }}" 
-                                                   class="form-check-input" value="{{ key }}">
-                                            <label class="form-check-label" for="ext_{{ key }}">
-                                                {{ label }}
-                                            </label>
+                                <div class="col-md-6 mb-3">
+                                    <label for="name" class="form-label">Project name</label>
+                                    <input type="text" name="name" id="name" class="form-control"
+                                           placeholder="demo-symfony" pattern="[a-zA-Z0-9_-]+"
+                                           maxlength="50" title="Letters, numbers, hyphen and underscore only">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="php" class="form-label">PHP version</label>
+                                    <select name="php" id="php" class="form-select" required>
+                                        {% for version in php_versions %}
+                                            <option value="{{ version }}">PHP {{ version }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="server" class="form-label">Application server</label>
+                                    <select name="server" id="server" class="form-select" required>
+                                        {% for key, label in servers %}
+                                            <option value="{{ key }}">{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="symfony" class="form-label">Symfony version</label>
+                                    <select name="symfony" id="symfony" class="form-select" required>
+                                        {% for key, label in symfony_versions %}
+                                            <option value="{{ key }}">Symfony {{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="database" class="form-label">Database</label>
+                                    <select name="database" id="database" class="form-select">
+                                        {% for key, label in databases %}
+                                            <option value="{{ key }}">{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="cache" class="form-label">Cache</label>
+                                    <select name="cache" id="cache" class="form-select">
+                                        {% for key, label in caches %}
+                                            <option value="{{ key }}">{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Extensions</label>
+                                <div class="row">
+                                    {% for key, label in extensions %}
+                                        <div class="col-md-4 mb-2">
+                                            <div class="form-check">
+                                                <input type="checkbox" name="extensions[]" id="ext_{{ key }}"
+                                                       class="form-check-input" value="{{ key }}">
+                                                <label class="form-check-label" for="ext_{{ key }}">
+                                                    {{ label }}
+                                                </label>
+                                            </div>
                                         </div>
-                                    </div>
-                                {% endfor %}
+                                    {% endfor %}
+                                </div>
                             </div>
-                        </div>
 
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input type="checkbox" name="redis" id="redis" class="form-check-input" value="1">
-                                <label class="form-check-label" for="redis">
-                                    Include Redis cache
-                                </label>
+                            <div class="mb-3">
+                                <label class="form-label">Message broker</label>
+                                <div class="form-check">
+                                    <input type="checkbox" name="rabbitmq" id="rabbitmq" class="form-check-input"
+                                           value="1">
+                                    <label class="form-check-label" for="rabbitmq">
+                                        Include RabbitMQ
+                                    </label>
+                                </div>
                             </div>
-                        </div>
 
-                        <button type="submit" id="btn" class="btn btn-dark btn-lg">Generate project</button>
-                        <p class="form-text d-block mt-2 mb-0" id="hint" aria-live="polite"></p>
-                    </form>
+                            <button type="submit" id="btn" class="btn btn-dark btn-lg">Generate project</button>
+                            <p class="form-text d-block mt-2 mb-0" id="hint" aria-live="polite"></p>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</main>
+    </main>
 {% endblock %}
 
 {% block javascripts %}
-<script>
-    document.getElementById('form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const form = this;
-        const btn = document.getElementById('btn');
-        const hint = document.getElementById('hint');
+    <script>
+        'use strict';
 
-        const params = new URLSearchParams();
-        const formData = new FormData(form);
-        for (const [key, value] of formData) {
-            if (key === 'extensions[]') {
-                params.append('extensions[]', value);
-            } else {
-                params.set(key, value);
+        // Auto-check dependencies
+        (function () {
+            const db = /** @type {HTMLSelectElement|null} */ (document.getElementById('database'));
+            const orm = /** @type {HTMLInputElement|null} */ (document.getElementById('ext_orm'));
+            const apiPlatform = /** @type {HTMLInputElement|null} */ (document.getElementById('ext_api-platform'));
+            const serializer = /** @type {HTMLInputElement|null} */ (document.getElementById('ext_serializer'));
+            const nelmio = /** @type {HTMLInputElement|null} */ (document.getElementById('ext_nelmio-api-doc'));
+            const rabbitmq = /** @type {HTMLInputElement|null} */ (document.getElementById('rabbitmq'));
+            const messenger = /** @type {HTMLInputElement|null} */ (document.getElementById('ext_messenger'));
+
+            // API Platform → ORM + Serializer + Nelmio (auto-included)
+            if (apiPlatform && orm && serializer && nelmio) {
+                const updateApiPlatformDeps = function () {
+                    const badgeHTML = '<span class="badge bg-primary text-white ms-1" style="font-size: 0.65rem; vertical-align: middle;">auto</span>';
+
+                    if (apiPlatform.checked) {
+                        // Auto-check and disable (included in api-pack)
+                        orm.checked = true;
+                        orm.disabled = true;
+                        serializer.checked = true;
+                        serializer.disabled = true;
+                        nelmio.checked = true;
+                        nelmio.disabled = true;
+                        // ORM implies DB: sync so docker-compose gets PostgreSQL
+                        if (db && db.value === 'none') {
+                            db.value = 'postgresql';
+                        }
+                        // Add badge to labels
+                        const ormLabel = orm.parentElement?.querySelector('label');
+                        const serializerLabel = serializer.parentElement?.querySelector('label');
+                        const nelmioLabel = nelmio.parentElement?.querySelector('label');
+
+                        if (ormLabel && !ormLabel.querySelector('.badge')) {
+                            ormLabel.insertAdjacentHTML('beforeend', badgeHTML);
+                        }
+                        if (serializerLabel && !serializerLabel.querySelector('.badge')) {
+                            serializerLabel.insertAdjacentHTML('beforeend', badgeHTML);
+                        }
+                        if (nelmioLabel && !nelmioLabel.querySelector('.badge')) {
+                            nelmioLabel.insertAdjacentHTML('beforeend', badgeHTML);
+                        }
+                    } else {
+                        // Re-enable when API Platform is unchecked
+                        orm.disabled = false;
+                        serializer.disabled = false;
+                        nelmio.disabled = false;
+
+                        // Remove badges from labels
+                        orm.parentElement?.querySelectorAll('.badge').forEach(b => b.remove());
+                        serializer.parentElement?.querySelectorAll('.badge').forEach(b => b.remove());
+                        nelmio.parentElement?.querySelectorAll('.badge').forEach(b => b.remove());
+                    }
+                };
+
+                apiPlatform.addEventListener('change', updateApiPlatformDeps);
+                // Initialize state on page load
+                updateApiPlatformDeps();
             }
-        }
-        const url = form.action + '?' + params.toString();
 
-        btn.disabled = true;
-        hint.textContent = 'Generating… This may take a few minutes.';
-        hint.classList.remove('text-danger');
-
-        fetch(url)
-            .then(function(res) {
-                if (!res.ok) {
-                    return res.text().then(function(text) {
-                        var err = new Error(text || 'Generation failed');
-                        try {
-                            var json = JSON.parse(text);
-                            if (json.error) err.userMessage = json.error;
-                            if (typeof json.retry_after_seconds === 'number') {
-                                err.retrySeconds = json.retry_after_seconds;
-                            }
-                        } catch (_) {}
-                        throw err;
-                    });
+            // ORM ↔ Database (keep in sync: DB needs ORM, ORM needs DB)
+            if (db && orm) {
+                const syncDbFromOrm = function () {
+                    if (orm.checked && db.value === 'none') {
+                        db.value = 'postgresql';
+                    }
+                    // User unchecked ORM while DB selected → clear DB (we don't support DB without orm-pack)
+                    if (!orm.checked && db.value !== 'none' && !orm.disabled) {
+                        db.value = 'none';
+                    }
+                };
+                orm.addEventListener('change', syncDbFromOrm);
+                // Also sync when API Platform auto-checks ORM
+                if (apiPlatform) {
+                    apiPlatform.addEventListener('change', syncDbFromOrm);
                 }
-                var disposition = res.headers.get('Content-Disposition');
-                return res.blob().then(function(blob) {
-                    return { blob: blob, disposition: disposition };
+                // Initialize on load
+                syncDbFromOrm();
+            }
+
+            // Database ↔ ORM (sync both ways; respect API Platform state)
+            if (db && orm && apiPlatform) {
+                db.addEventListener('change', function () {
+                    if (db.value && db.value !== 'none' && !apiPlatform.checked) {
+                        orm.checked = true;
+                    }
+                    // User set Database to None → uncheck ORM (unless locked by API Platform)
+                    if (db.value === 'none' && !orm.disabled) {
+                        orm.checked = false;
+                    }
                 });
-            })
-            .then(function(data) {
-                var filename = 'project.zip';
-                if (data.disposition) {
-                    var m = data.disposition.match(/filename="?([^";\n]+)"?/);
-                    if (m) filename = m[1].trim();
+            }
+
+            // RabbitMQ → Messenger (auto-included)
+            if (rabbitmq && messenger) {
+                const updateRabbitMQDeps = function () {
+                    const badgeHTML = '<span class="badge bg-info text-white ms-1" style="font-size: 0.65rem; vertical-align: middle;">auto</span>';
+
+                    if (rabbitmq.checked) {
+                        messenger.checked = true;
+                        messenger.disabled = true;
+
+                        // Add badge to label
+                        const messengerLabel = messenger.parentElement?.querySelector('label');
+                        if (messengerLabel && !messengerLabel.querySelector('.badge')) {
+                            messengerLabel.insertAdjacentHTML('beforeend', badgeHTML);
+                        }
+                    } else {
+                        messenger.disabled = false;
+
+                        // Remove badge from label
+                        messenger.parentElement?.querySelectorAll('.badge').forEach(b => b.remove());
+                    }
+                };
+
+                rabbitmq.addEventListener('change', updateRabbitMQDeps);
+                // Initialize state on page load
+                updateRabbitMQDeps();
+            }
+        }());
+
+        document.getElementById('form').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const btn = /** @type {HTMLButtonElement|null} */ (document.getElementById('btn'));
+            const hint = /** @type {HTMLElement|null} */ (document.getElementById('hint'));
+            const form = /** @type {HTMLFormElement} */ (e.target);
+
+            if (!btn || !hint) return;
+
+            const params = new URLSearchParams();
+
+            new FormData(form).forEach(function (value, key) {
+                const strValue = value instanceof File ? value.name : value;
+                if (key === 'extensions[]') {
+                    params.append(key, strValue);
+                } else {
+                    params.set(key, strValue);
                 }
-                var a = document.createElement('a');
-                a.href = URL.createObjectURL(data.blob);
-                a.download = filename;
-                a.style.display = 'none';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(a.href);
-                hint.textContent = 'Download started.';
-            })
-            .catch(function(err) {
-                var msg = (err && err.userMessage) || (err && err.message) || 'Generation failed.';
-                if (err && typeof err.retrySeconds === 'number' && err.retrySeconds > 0) {
-                    var min = Math.ceil(err.retrySeconds / 60);
-                    msg += ' Try again in ' + min + ' minute(s).';
-                }
-                hint.textContent = msg;
-                hint.classList.add('text-danger');
-            })
-            .finally(function() {
-                btn.disabled = false;
             });
-    });
-</script>
+
+            btn.disabled = true;
+            hint.textContent = 'Generating… This may take a few minutes.';
+            hint.classList.remove('text-danger');
+
+            fetch(form.action + '?' + params.toString())
+                .then(function (response) {
+                    if (!response.ok) {
+                        return response.text().then(function (text) {
+                            let message = 'Generation failed.';
+                            let retrySeconds = 0;
+
+                            try {
+                                const parsed = JSON.parse(text);
+                                const apiError = typeof parsed.error === 'string' ? parsed.error : null;
+                                const retryAfter = typeof parsed.retry_after_seconds === 'number' ? parsed.retry_after_seconds : 0;
+
+                                if (apiError) message = apiError;
+                                if (retryAfter > 0) retrySeconds = retryAfter;
+                            } catch (parseErr) {
+                                // server returned non-JSON response, use default message
+                            }
+
+                            if (retrySeconds > 0) {
+                                message += ' Try again in ' + Math.ceil(retrySeconds / 60) + ' minute(s).';
+                            }
+
+                            return Promise.reject(message);
+                        });
+                    }
+
+                    return response.blob().then(function (blob) {
+                        const disposition = response.headers.get('Content-Disposition');
+                        let filename = 'project.zip';
+
+                        if (disposition) {
+                            const match = disposition.match(/filename="?([^";\n]+)"?/);
+                            if (match) {
+                                filename = match[1].trim();
+                            }
+                        }
+
+                        const link = /** @type {HTMLAnchorElement} */ (document.createElement('a'));
+                        link.href = URL.createObjectURL(blob);
+                        link.download = filename;
+                        link.style.display = 'none';
+
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(link.href);
+
+                        hint.textContent = 'Download started.';
+                    });
+                })
+                .catch(function (err) {
+                    hint.textContent = typeof err === 'string' ? err : 'Generation failed.';
+                    hint.classList.add('text-danger');
+                })
+                .finally(function () {
+                    btn.disabled = false;
+                });
+        });
+    </script>
 {% endblock %}

@@ -93,11 +93,25 @@ final class GeneratorOptions
     public array $extensions {
         get => [
             'orm' => 'Doctrine ORM',
+            'security' => 'Security',
             'mailer' => 'Mailer',
             'messenger' => 'Messenger',
-            'security' => 'Security',
             'validator' => 'Validator',
             'serializer' => 'Serializer',
+            'api-platform' => 'API Platform',
+            'http-client' => 'HTTP Client',
+            'nelmio-api-doc' => 'Nelmio API Doc',
+        ];
+    }
+
+    /**
+     * @var array<string, string>
+     */
+    public array $caches {
+        get => [
+            'none' => 'None',
+            'redis' => 'Redis',
+            'memcached' => 'Memcached',
         ];
     }
 
@@ -174,6 +188,11 @@ final class GeneratorOptions
     public function isValidDatabase(string $database): bool
     {
         return isset($this->databases[$database]);
+    }
+
+    public function isValidCache(string $cache): bool
+    {
+        return isset($this->caches[$cache]);
     }
 
     /**

@@ -47,7 +47,8 @@ final readonly class GenerateController
         // Optional parameters
         $name = $this->sanitizeProjectName($request->query->getString('name', 'demo-symfony'));
         $database = $request->query->getString('database', 'none');
-        $redis = $request->query->getBoolean('redis', false);
+        $cache = $request->query->getString('cache', 'none');
+        $rabbitmq = $request->query->getBoolean('rabbitmq', false);
         $extensions = $request->query->all('extensions') ?? [];
 
         // Validate optional parameters
@@ -57,10 +58,50 @@ final readonly class GenerateController
             return new Response('Invalid database', Response::HTTP_BAD_REQUEST);
         }
 
+        if (!$this->options->isValidCache($cache)) {
+            $this->logger->warning('Invalid cache parameter', ['cache' => $cache]);
+
+            return new Response('Invalid cache', Response::HTTP_BAD_REQUEST);
+        }
+
         if (!$this->options->areValidExtensions($extensions)) {
             $this->logger->warning('Invalid extensions', ['extensions' => $extensions]);
 
             return new Response('Invalid extensions', Response::HTTP_BAD_REQUEST);
+        }
+
+        // ORM without DB: orm-pack recipe expects a DB, use PostgreSQL so docker-compose has DB + volumes
+        if ('none' === $database && in_array('orm', $extensions, true)) {
+            $database = 'postgresql';
+            $this->logger->info('Auto-selected PostgreSQL (ORM selected without database)');
+        }
+
+        // Auto-include dependencies
+        if ('none' !== $database && !in_array('orm', $extensions, true)) {
+            $extensions[] = 'orm';
+            $this->logger->info('Auto-included Doctrine ORM (database selected)', [
+                'database' => $database,
+            ]);
+        }
+
+        if (in_array('api-platform', $extensions, true)) {
+            if (!in_array('orm', $extensions, true)) {
+                $extensions[] = 'orm';
+                $this->logger->info('Auto-included Doctrine ORM (API Platform requires it)');
+            }
+            if (!in_array('serializer', $extensions, true)) {
+                $extensions[] = 'serializer';
+                $this->logger->info('Auto-included Serializer (API Platform requires it)');
+            }
+            if (!in_array('nelmio-api-doc', $extensions, true)) {
+                $extensions[] = 'nelmio-api-doc';
+                $this->logger->info('Auto-included Nelmio API Doc (works great with API Platform)');
+            }
+        }
+
+        if ($rabbitmq && !in_array('messenger', $extensions, true)) {
+            $extensions[] = 'messenger';
+            $this->logger->info('Auto-included Messenger (RabbitMQ selected)');
         }
 
         // Generation runs composer create-project, require, install — can take several minutes
@@ -76,7 +117,8 @@ final readonly class GenerateController
                 projectName: $name,
                 extensions: $extensions,
                 database: 'none' !== $database ? $database : null,
-                redis: $redis
+                cache: 'none' !== $cache ? $cache : null,
+                rabbitmq: $rabbitmq
             );
 
             $duration = microtime(true) - $startTime;

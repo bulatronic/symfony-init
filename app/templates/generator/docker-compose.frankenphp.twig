@@ -13,3 +13,104 @@ services:
       - APP_ENV=dev
       - APP_DEBUG=1
     command: ["frankenphp", "run", "--config", "/app/Caddyfile"]
+{% if database == 'postgresql' %}
+
+  database:
+    image: postgres:alpine
+    container_name: symfony-database
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: "!ChangeMe!"
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql
+{% endif %}
+{% if database == 'mysql' %}
+
+  database:
+    image: mysql:latest
+    container_name: symfony-database
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: app
+      MYSQL_USER: app
+      MYSQL_PASSWORD: "!ChangeMe!"
+      MYSQL_ROOT_PASSWORD: "!ChangeMe!"
+    ports:
+      - "3306:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+{% endif %}
+{% if database == 'mariadb' %}
+
+  database:
+    image: mariadb:latest
+    container_name: symfony-database
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: app
+      MYSQL_USER: app
+      MYSQL_PASSWORD: "!ChangeMe!"
+      MYSQL_ROOT_PASSWORD: "!ChangeMe!"
+    ports:
+      - "3306:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+{% endif %}
+{% if cache == 'redis' %}
+
+  redis:
+    image: redis:alpine
+    container_name: symfony-cache
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - cache-data:/data
+    command: redis-server --save 60 1 --loglevel warning
+
+{% endif %}
+{% if cache == 'memcached' %}
+
+  memcached:
+    image: memcached:alpine
+    container_name: symfony-cache
+    restart: unless-stopped
+    ports:
+      - "11211:11211"
+
+{% endif %}
+{% if rabbitmq == 'enabled' %}
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: symfony-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
+{% endif %}
+{% set has_volumes = (database != 'none' and database != 'sqlite') or cache == 'redis' or rabbitmq == 'enabled' %}
+{% if has_volumes %}
+
+volumes:
+{% if database != 'none' and database != 'sqlite' %}
+  db-data:
+{% endif %}
+{% if cache == 'redis' %}
+  cache-data:
+{% endif %}
+{% if rabbitmq == 'enabled' %}
+  rabbitmq-data:
+{% endif %}
+{% endif %}

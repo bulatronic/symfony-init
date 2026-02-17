@@ -11,12 +11,16 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
+use Twig\Environment;
+use Twig\Loader\FilesystemLoader;
 
 final class ProjectGeneratorService
 {
     private const int COMPOSER_TIMEOUT = 120;
     private const int CACHE_TTL = 86400; // 24 hours
     private const int ZIP_BUFFER_SIZE = 8192;
+
+    private readonly Environment $twig;
 
     public function __construct(
         #[Autowire('%kernel.project_dir%')]
@@ -27,6 +31,11 @@ final class ProjectGeneratorService
         private readonly LoggerInterface $logger,
         private readonly Filesystem $filesystem,
     ) {
+        // Initialize Twig for template rendering
+        $loader = new FilesystemLoader($this->generatorTemplatesDir);
+        $this->twig = new Environment($loader, [
+            'autoescape' => false, // Disable autoescaping for docker-compose.yml
+        ]);
     }
 
     /**
@@ -45,14 +54,15 @@ final class ProjectGeneratorService
         string $projectName = 'demo-symfony',
         array $extensions = [],
         ?string $database = null,
-        bool $redis = false,
+        ?string $cache = null,
+        bool $rabbitmq = false,
     ): string {
         // Create cache key based on configuration (excluding project name)
-        $cacheKey = $this->generateCacheKey($phpVersion, $server, $symfonyVersion, $extensions, $database, $redis);
+        $cacheKey = $this->generateCacheKey($phpVersion, $server, $symfonyVersion, $extensions, $database, $cache, $rabbitmq);
 
         // Try to get cached base project
         try {
-            $cachedBasePath = $this->cache->get($cacheKey, function (ItemInterface $item) use ($phpVersion, $server, $symfonyVersion, $extensions, $database, $redis): string {
+            $cachedBasePath = $this->cache->get($cacheKey, function (ItemInterface $item) use ($phpVersion, $server, $symfonyVersion, $extensions, $database, $cache, $rabbitmq): string {
                 $item->expiresAfter(self::CACHE_TTL);
 
                 $this->logger->info('Generating new base project for caching', [
@@ -62,7 +72,7 @@ final class ProjectGeneratorService
                 ]);
 
                 // Generate and cache the base project
-                return $this->generateBaseProject($phpVersion, $server, $symfonyVersion, $extensions, $database, $redis);
+                return $this->generateBaseProject($phpVersion, $server, $symfonyVersion, $extensions, $database, $cache, $rabbitmq);
             });
 
             // Create a copy with custom project name
@@ -85,18 +95,20 @@ final class ProjectGeneratorService
         string $symfonyVersion,
         array $extensions,
         ?string $database,
-        bool $redis,
+        ?string $cache,
+        bool $rabbitmq,
     ): string {
         sort($extensions); // Normalize order
 
         return sprintf(
-            'project_%s_%s_%s_%s_%s_%s',
+            'project_%s_%s_%s_%s_%s_%s_%s',
             $phpVersion,
             $server,
             $symfonyVersion,
             implode('_', $extensions),
             $database ?? 'none',
-            $redis ? 'redis' : 'noredis'
+            $cache ?? 'nocache',
+            $rabbitmq ? 'rabbitmq' : 'norabbitmq'
         );
     }
 
@@ -111,7 +123,8 @@ final class ProjectGeneratorService
         string $symfonyVersion,
         array $extensions,
         ?string $database,
-        bool $redis,
+        ?string $cache,
+        bool $rabbitmq,
     ): string {
         $tempDir = $this->projectDir.'/var/generator/'.bin2hex(random_bytes(8));
         $this->ensureDirectory($this->projectDir.'/var/generator');
@@ -119,21 +132,56 @@ final class ProjectGeneratorService
 
         try {
             $this->runComposerCreateProject($tempDir, $symfonyVersion);
-            $this->injectDockerFiles($tempDir, $phpVersion, $server, $database, $redis);
+            $this->injectDockerFiles($tempDir, $phpVersion, $server, $database, $cache, $rabbitmq);
 
-            if (!empty($extensions)) {
-                $this->installExtensions($tempDir, $extensions, $symfonyVersion);
+            // Auto-include dependencies
+            if ($database && !in_array('orm', $extensions, true)) {
+                $extensions[] = 'orm';
+                $this->logger->info('Auto-included Doctrine ORM (database selected)', [
+                    'database' => $database,
+                ]);
+            }
+
+            if (in_array('api-platform', $extensions, true)) {
+                if (!in_array('orm', $extensions, true)) {
+                    $extensions[] = 'orm';
+                    $this->logger->info('Auto-included Doctrine ORM (API Platform requires it)');
+                }
+                if (!in_array('serializer', $extensions, true)) {
+                    $extensions[] = 'serializer';
+                    $this->logger->info('Auto-included Serializer (API Platform requires it)');
+                }
+                if (!in_array('nelmio-api-doc', $extensions, true)) {
+                    $extensions[] = 'nelmio-api-doc';
+                    $this->logger->info('Auto-included Nelmio API Doc (works great with API Platform)');
+                }
+            }
+
+            if ($rabbitmq && !in_array('messenger', $extensions, true)) {
+                $extensions[] = 'messenger';
+                $this->logger->info('Auto-included Messenger (RabbitMQ selected)');
+            }
+
+            if (!empty($extensions) || $rabbitmq) {
+                $this->installExtensions($tempDir, $extensions, $symfonyVersion, $rabbitmq);
             }
 
             if ($database) {
                 $this->configureDatabase($tempDir, $database);
             }
 
-            if ($redis) {
-                $this->configureRedis($tempDir);
+            if ($cache && 'none' !== $cache) {
+                $this->configureCache($tempDir, $cache);
+            }
+
+            if ($rabbitmq) {
+                $this->configureRabbitMQ($tempDir);
             }
 
             $this->runComposerInstall($tempDir);
+
+            // Clean up Docker files added by Flex recipes
+            $this->cleanupFlexDockerFiles($tempDir);
 
             // Store in share directory (shared between instances, Symfony 7.4+)
             $shareDir = $this->projectDir.'/var/share/projects';
@@ -240,51 +288,53 @@ final class ProjectGeneratorService
         string $phpVersion,
         string $server,
         ?string $database,
-        bool $redis,
+        ?string $cache,
+        bool $rabbitmq,
     ): void {
-        $templates = $this->generatorTemplatesDir;
-        $replace = [
-            '{{ php_version }}' => $phpVersion,
-            '{{ database }}' => $database ?? 'none',
-            '{{ redis }}' => $redis ? 'enabled' : 'disabled',
-            '{{ php_extensions }}' => $this->buildPhpExtensionsList($database, $redis),
+        $context = [
+            'php_version' => $phpVersion,
+            'database' => $database ?? 'none',
+            'cache' => $cache ?? 'none',
+            'rabbitmq' => $rabbitmq ? 'enabled' : 'disabled',
+            'php_extensions' => $this->buildPhpExtensionsList($database, $cache, $rabbitmq),
         ];
 
         if ('frankenphp' === $server) {
             $this->writeFile(
                 $tempDir.'/Dockerfile',
-                $this->renderTemplate($templates.'/Dockerfile.frankenphp.twig', $replace)
+                $this->renderTwigTemplate('Dockerfile.frankenphp.twig', $context)
             );
             $this->writeFile(
                 $tempDir.'/Caddyfile',
-                $this->readTemplate($templates.'/Caddyfile.frankenphp.twig')
+                $this->renderTwigTemplate('Caddyfile.frankenphp.twig', $context)
             );
             $this->writeFile(
                 $tempDir.'/docker-compose.yml',
-                $this->renderTemplate($templates.'/docker-compose.frankenphp.twig', $replace)
+                $this->renderTwigTemplate('docker-compose.frankenphp.twig', $context)
             );
         } else {
             $this->writeFile(
                 $tempDir.'/Dockerfile',
-                $this->renderTemplate($templates.'/Dockerfile.fpm.twig', $replace)
+                $this->renderTwigTemplate('Dockerfile.fpm.twig', $context)
             );
             $this->writeFile(
                 $tempDir.'/docker-compose.yml',
-                $this->renderTemplate($templates.'/docker-compose.fpm.twig', $replace)
+                $this->renderTwigTemplate('docker-compose.fpm.twig', $context)
             );
             $this->writeFile(
                 $tempDir.'/nginx.conf',
-                $this->readTemplate($templates.'/nginx.fpm.twig')
+                $this->renderTwigTemplate('nginx.fpm.twig', $context)
             );
         }
     }
 
     /**
-     * Build space-separated list of PHP extensions for Docker (zip, opcache, pdo_*, redis).
+     * Build space-separated list of PHP extensions for Docker (zip, opcache, pdo_*, redis, memcached, amqp).
      */
-    private function buildPhpExtensionsList(?string $database, bool $redis): string
+    private function buildPhpExtensionsList(?string $database, ?string $cache, bool $rabbitmq = false): string
     {
         $extensions = ['zip', 'opcache'];
+
         if ($database) {
             $extensions[] = match ($database) {
                 'postgresql' => 'pdo_pgsql',
@@ -293,61 +343,70 @@ final class ProjectGeneratorService
                 default => null,
             };
         }
-        if ($redis) {
-            $extensions[] = 'redis';
+
+        if ($cache) {
+            $extensions[] = match ($cache) {
+                'redis' => 'redis',
+                'memcached' => 'memcached',
+                default => null,
+            };
+        }
+
+        if ($rabbitmq) {
+            $extensions[] = 'amqp';
         }
 
         return implode(' ', array_filter($extensions));
     }
 
     /**
-     * Read template file content.
+     * Render Twig template with context variables.
      */
-    private function readTemplate(string $templatePath): string
+    private function renderTwigTemplate(string $templateName, array $context = []): string
     {
-        $content = @file_get_contents($templatePath);
-        if (false === $content) {
-            throw new \RuntimeException(sprintf('Failed to read template: %s', $templatePath));
+        try {
+            return $this->twig->render($templateName, $context);
+        } catch (\Throwable $e) {
+            throw new \RuntimeException(sprintf('Failed to render template %s: %s', $templateName, $e->getMessage()), 0, $e);
         }
-
-        return $content;
-    }
-
-    /**
-     * Render template with replacements.
-     */
-    private function renderTemplate(string $templatePath, array $replacements): string
-    {
-        $content = $this->readTemplate($templatePath);
-
-        return str_replace(array_keys($replacements), array_values($replacements), $content);
     }
 
     /**
      * Packages that are meta-packs (versioning v1.x, v2.x), not Symfony major version.
      * They must be required without version so Composer resolves from project's Symfony.
      */
-    private const PACK_META_PACKAGES = ['symfony/orm-pack'];
+    private const array PACK_META_PACKAGES = ['symfony/orm-pack', 'api-platform/api-pack'];
 
     /**
      * Install Symfony extensions using array_filter() with PHP 8.4+ syntax.
      */
-    private function installExtensions(string $tempDir, array $extensions, string $symfonyVersion): void
+    private function installExtensions(string $tempDir, array $extensions, string $symfonyVersion, bool $rabbitmq = false): void
     {
+        // If api-platform is selected, skip orm and serializer (they're included in api-pack)
+        $hasApiPlatform = in_array('api-platform', $extensions, true);
+
         $packages = array_filter(
             array_map(
                 fn (string $ext): ?string => match ($ext) {
-                    'orm' => 'symfony/orm-pack',
+                    'orm' => $hasApiPlatform ? null : 'symfony/orm-pack',
                     'mailer' => 'symfony/mailer',
                     'messenger' => 'symfony/messenger',
                     'security' => 'symfony/security-bundle',
                     'validator' => 'symfony/validator',
-                    'serializer' => 'symfony/serializer',
+                    'serializer' => $hasApiPlatform ? null : 'symfony/serializer',
+                    'api-platform' => 'api-platform/api-pack',
+                    'http-client' => 'symfony/http-client',
+                    'nelmio-api-doc' => 'nelmio/api-doc-bundle',
                     default => null,
                 },
                 $extensions
             )
         );
+
+        // RabbitMQ requires symfony/amqp-messenger (see Symfony docs: messenger + RabbitMQ)
+        if ($rabbitmq) {
+            $packages[] = 'symfony/amqp-messenger';
+        }
 
         if (empty($packages)) {
             return;
@@ -369,14 +428,23 @@ final class ProjectGeneratorService
 
         // Require one package at a time so composer.json and composer.lock stay in sync.
         foreach ($packages as $package) {
-            $constraint = \in_array($package, self::PACK_META_PACKAGES, true)
-                ? $package
-                : sprintf('%s:^%s', $package, $symfonyVersion);
+            // Determine version constraint
+            if (\in_array($package, self::PACK_META_PACKAGES, true)) {
+                $constraint = $package;
+            } elseif ('nelmio/api-doc-bundle' === $package) {
+                // Nelmio has its own versioning (5.x), not tied to Symfony version
+                $constraint = $package;
+            } elseif ('symfony/amqp-messenger' === $package) {
+                // amqp-messenger has its own versioning, not tied to Symfony version
+                $constraint = $package;
+            } else {
+                $constraint = sprintf('%s:^%s', $package, $symfonyVersion);
+            }
 
             $process = new Process(
                 ['composer', 'require', $constraint, '--no-interaction', '--prefer-dist'],
                 $tempDir,
-                null,
+                ['SYMFONY_SKIP_DOCKER' => '1'], // Skip Docker integration from Flex recipes
                 self::COMPOSER_TIMEOUT
             );
 
@@ -430,7 +498,7 @@ final class ProjectGeneratorService
         }
     }
 
-    private function configureRedis(string $tempDir): void
+    private function configureCache(string $tempDir, string $cache): void
     {
         $envPath = $tempDir.'/.env';
         $envContent = @file_get_contents($envPath);
@@ -438,8 +506,49 @@ final class ProjectGeneratorService
             $envContent = '';
         }
 
-        $envContent .= "\nREDIS_URL=redis://redis:6379\n";
+        $cacheUrl = match ($cache) {
+            'redis' => 'redis://redis:6379',
+            'memcached' => 'memcached://memcached:11211',
+            default => null,
+        };
+
+        if ($cacheUrl) {
+            $envContent .= "\nCACHE_DSN={$cacheUrl}\n";
+            $this->writeFile($envPath, $envContent);
+        }
+    }
+
+    /**
+     * Set Messenger transport to RabbitMQ in .env.
+     * The symfony/messenger recipe already creates config/packages/messenger.yaml and the
+     * ###> symfony/messenger ### block in .env; we only replace MESSENGER_TRANSPORT_DSN
+     * so the recipe output stays the single source of truth.
+     */
+    private function configureRabbitMQ(string $tempDir): void
+    {
+        $envPath = $tempDir.'/.env';
+        $envContent = @file_get_contents($envPath);
+        if (false === $envContent) {
+            $envContent = '';
+        }
+
+        $dsn = 'MESSENGER_TRANSPORT_DSN=amqp://guest:guest@rabbitmq:5672/%2f/messages';
+        if (preg_match('/^MESSENGER_TRANSPORT_DSN=/m', $envContent)) {
+            $envContent = preg_replace('/^MESSENGER_TRANSPORT_DSN=.*/m', $dsn, $envContent);
+        } else {
+            $envContent .= "\n{$dsn}\n";
+        }
         $this->writeFile($envPath, $envContent);
+
+        // Enable async transport in config (recipe leaves it commented)
+        $messengerYaml = $tempDir.'/config/packages/messenger.yaml';
+        if (is_file($messengerYaml)) {
+            $yaml = file_get_contents($messengerYaml);
+            $yaml = preg_replace("/^(\\s*)#\\s*async:\\s*'%env\\(MESSENGER_TRANSPORT_DSN\\)%'/m", '$1async: \'%env(MESSENGER_TRANSPORT_DSN)%\'', $yaml);
+            if (null !== $yaml) {
+                $this->writeFile($messengerYaml, $yaml);
+            }
+        }
     }
 
     private function runComposerInstall(string $tempDir): void
@@ -480,5 +589,50 @@ final class ProjectGeneratorService
     private function writeFile(string $path, string $contents): void
     {
         $this->filesystem->dumpFile($path, $contents);
+    }
+
+    /**
+     * Remove Docker files added by Symfony Flex recipes.
+     * Flex may add compose.override.yaml or inject services into docker-compose.yml.
+     */
+    private function cleanupFlexDockerFiles(string $tempDir): void
+    {
+        // Remove compose.override.yaml if it exists
+        $overrideFiles = [
+            $tempDir.'/compose.override.yaml',
+            $tempDir.'/compose.override.yml',
+            $tempDir.'/docker-compose.override.yaml',
+            $tempDir.'/docker-compose.override.yml',
+        ];
+
+        foreach ($overrideFiles as $file) {
+            if (file_exists($file)) {
+                @unlink($file);
+            }
+        }
+
+        // Clean up docker-compose.yml by removing Flex-injected blocks
+        $dockerComposeFile = $tempDir.'/docker-compose.yml';
+        if (!file_exists($dockerComposeFile)) {
+            return;
+        }
+
+        $content = file_get_contents($dockerComposeFile);
+        if (false === $content) {
+            return;
+        }
+
+        // Remove blocks between ###> package/name ### and ###< package/name ###
+        // Keep at least one newline (\n+) to avoid gluing lines together
+        $content = preg_replace(
+            '/\n*###>.*?###.*?\n.*?###<.*?###.*?\n*/s',
+            "\n",
+            $content
+        );
+
+        // Clean up extra empty lines (3 or more)
+        $content = preg_replace('/\n{3,}/', "\n\n", $content);
+
+        $this->writeFile($dockerComposeFile, $content);
     }
 }
