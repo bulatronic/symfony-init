@@ -13,34 +13,181 @@
     <meta property="og:type" content="website">
     <meta property="og:url"
           content="{{ app.request is defined and app.request is not null ? app.request.uri : '' }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bs-font-sans-serif: 'Inter', system-ui, -apple-system, sans-serif;
+            --accent-color: #000000;
+            --accent-color-light: #333333;
+        }
+
+        [data-bs-theme="dark"] {
+            --accent-color: #ffffff;
+            --accent-color-light: #e0e0e0;
+        }
+
+        body {
+            font-family: var(--bs-font-sans-serif), serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .navbar-brand {
+            font-weight: 600;
+            font-size: 1.35rem;
+            letter-spacing: 0.02em;
+            gap: 0.6rem;
+        }
+
+        .navbar-logo-wrap {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: #fff;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .navbar-logo-wrap img {
+            display: block;
+            width: 36px;
+            height: 36px;
+            margin: -2px;
+        }
+
+        #theme-toggle {
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            color: inherit;
+        }
+
+        #theme-toggle:hover {
+            transform: scale(1.1);
+            opacity: 0.8;
+        }
+
+        #theme-toggle svg {
+            transition: transform 0.3s ease;
+            fill: currentColor;
+        }
+
+        .card {
+            transition: box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.08) !important;
+        }
+
+        [data-bs-theme="dark"] .card:hover {
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+        }
+
+        [data-bs-theme="light"] .card.shadow-sm {
+            box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.08) !important;
+        }
+
+        [data-bs-theme="dark"] .card.shadow-sm {
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+        }
+
+        footer a:hover {
+            opacity: 0.7;
+        }
+    </style>
     {% block stylesheets %}{% endblock %}
 </head>
-<body class="bg-light d-flex flex-column min-vh-100">
-<nav class="navbar navbar-expand bg-white border-bottom mb-4">
+<body class="bg-body d-flex flex-column min-vh-100" data-bs-theme="light">
+<nav class="navbar navbar-expand bg-body border-bottom mb-4">
     <div class="container">
-        <a class="navbar-brand d-flex align-items-center gap-2 text-dark" href="{{ path('app_home') }}">
-            <img src="{{ asset('symfony-original.svg') }}" alt="Symfony" height="32" width="32" class="d-inline-block">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="{{ path('app_home') }}">
+            <span class="navbar-logo-wrap">
+                <img src="{{ asset('symfony-original.svg') }}" alt="Symfony" height="32" width="32"
+                     class="d-inline-block">
+            </span>
             <span>Symfony Initializr</span>
         </a>
+        <div class="d-flex align-items-center">
+            <button type="button" class="btn btn-link text-decoration-none p-2 border-0" id="theme-toggle"
+                    aria-label="Toggle theme" style="color: inherit;">
+                <svg id="theme-icon-light" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
+                     viewBox="0 0 16 16" style="display: none;">
+                    <path
+                        d="M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm0 1a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8zm10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.414a.5.5 0 1 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707zM4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708z"/>
+                </svg>
+                <svg id="theme-icon-dark" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
+                     viewBox="0 0 16 16">
+                    <path
+                        d="M6 .278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278zM4.858 1.311A7.269 7.269 0 0 0 1.025 7.71c0 4.02 3.279 7.276 7.319 7.276a7.316 7.316 0 0 0 5.205-2.162c-.337.042-.68.063-1.029.063-4.61 0-8.343-3.714-8.343-8.29 0-1.167.242-2.278.681-3.286z"/>
+                </svg>
+            </button>
+        </div>
     </div>
 </nav>
 
 {% block body %}{% endblock %}
 
-<footer class="mt-auto py-3 bg-white border-top">
+<footer class="mt-auto py-3 bg-body border-top">
     <div class="container text-center text-muted small">
         <a href="https://github.com/bulatronic/symfony-init"
-           class="text-decoration-none text-muted d-inline-flex align-items-center gap-1" target="_blank"
-           rel="noopener">
-            <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" width="20"
-                 height="20">
+           class="text-decoration-none text-muted d-inline-flex align-items-center gap-2" target="_blank"
+           rel="noopener" style="transition: opacity 0.2s ease;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                <path
+                    d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+            </svg>
             <span>GitHub</span>
         </a>
     </div>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    'use strict';
+
+    // Theme toggle functionality
+    (function () {
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIconLight = document.getElementById('theme-icon-light');
+        const themeIconDark = document.getElementById('theme-icon-dark');
+        const html = document.documentElement;
+        const body = document.body;
+
+        // Get saved theme or default to light
+        const savedTheme = localStorage.getItem('theme') || 'light';
+
+        // Apply saved theme
+        function setTheme(theme) {
+            html.setAttribute('data-bs-theme', theme);
+            body.setAttribute('data-bs-theme', theme);
+            localStorage.setItem('theme', theme);
+
+            // Update icons
+            if (theme === 'dark') {
+                themeIconLight.style.display = 'inline';
+                themeIconDark.style.display = 'none';
+            } else {
+                themeIconLight.style.display = 'none';
+                themeIconDark.style.display = 'inline';
+            }
+        }
+
+        // Initialize theme
+        setTheme(savedTheme);
+
+        // Toggle theme on button click
+        if (themeToggle) {
+            themeToggle.addEventListener('click', function () {
+                const currentTheme = html.getAttribute('data-bs-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                setTheme(newTheme);
+            });
+        }
+    })();
+</script>
 {% block javascripts %}{% endblock %}
 </body>
 </html>

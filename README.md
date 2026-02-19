@@ -15,25 +15,32 @@
 
 Выберите параметры проекта и получите ZIP с готовым Symfony-приложением под Docker. Запуск: `docker compose up`.
 
-**Скриншот интерфейса**
+**Скриншоты интерфейса**
 
 <p style="text-align: center">
-  <img src="docs/screenshot.png" alt="Главная страница Symfony Initializr" />
+  <a href="docs/light-screenshot.png"><img src="docs/light-screenshot.png" alt="Главная страница Symfony Initializr" width="960" /></a>
+  <a href="docs/dark-screenshot.png"><img src="docs/dark-screenshot.png" alt="Главная страница Symfony Initializr" width="960" /></a>
 </p>
 
 ---
 
 ## Возможности
 
-- **Параметры**: имя проекта, PHP, сервер (PHP-FPM + Nginx или FrankenPHP), версия Symfony (LTS и текущие — с symfony.com).
-- **База данных**: без БД, PostgreSQL, MySQL, MariaDB, SQLite. Связка с чекбоксом Doctrine ORM: выбор БД включает ORM, выбор ORM подставляет PostgreSQL при «без БД». В Docker — образы на Alpine где есть (postgres, redis, memcached, rabbitmq).
+- **Параметры**: имя проекта, PHP, сервер (PHP-FPM + Nginx или FrankenPHP), версия Symfony (LTS и текущие - с symfony.com).
+- **База данных**: без БД, PostgreSQL, MySQL, MariaDB, SQLite. Связка с чекбоксом Doctrine ORM: выбор БД включает ORM, выбор ORM подставляет PostgreSQL при «без БД». В Docker - образы на Alpine где есть (postgres, redis, memcached, rabbitmq).
 - **Кеш**: селект None / Redis / Memcached. В проект добавляются контейнер, PHP-расширение и `CACHE_DSN` в `.env`.
 - **Расширения**: Doctrine ORM, Security, Mailer, Messenger, Validator, Serializer, API Platform, HTTP Client, Nelmio API Doc. Зависимости подставляются автоматически (API Platform → ORM + Serializer + Nelmio; RabbitMQ → Messenger).
-- **Message broker**: опция RabbitMQ — контейнер RabbitMQ с management и `MESSENGER_TRANSPORT_DSN` в `.env`.
+- **Message broker**: опция RabbitMQ - контейнер RabbitMQ с management и `MESSENGER_TRANSPORT_DSN` в `.env`.
 - **Генерация**: скелет через `composer create-project`, подстановка Dockerfile, docker-compose, конфиг веб-сервера (Nginx / Caddyfile). Рецепты Flex не дублируют наши сервисы (`SYMFONY_SKIP_DOCKER=1`, очистка блоков рецептов в compose).
-- **Скачивание**: кнопка блокируется до ответа, архив через fetch. При лимите — сообщение и время повтора.
+- **Скачивание**: кнопка блокируется до ответа, архив через fetch. При лимите - сообщение и время повтора.
 - **Кеширование**: по комбинации параметров (PHP, сервер, Symfony, расширения, БД, кеш, RabbitMQ). Кеш в `var/share/` (Symfony 7.4+).
 - **Лимит**: 30 запросов в час на IP.
+
+---
+
+## Безопасность и прозрачность
+
+Проект открыт: вы можете просмотреть [исходный код генератора](app/src/) и логику сборки архива до использования. Сгенерированный ZIP содержит только стандартный скелет Symfony, зависимости из Packagist и добавленные Docker/конфиги - без скрытого кода. Перед развёртыванием рекомендуем просмотреть содержимое архива.
 
 ---
 
@@ -55,7 +62,7 @@ docker compose exec frankenphp bash
 
 ## Разработка
 
-Стиль кода проверяется и исправляется с помощью [PHP CS Fixer](https://github.com/PHP-CS-Fixer/PHP-CS-Fixer) (правила `@Symfony`). Конфигурация — `app/.php-cs-fixer.dist.php`. Запуск внутри контейнера (из каталога приложения):
+Стиль кода проверяется и исправляется с помощью [PHP CS Fixer](https://github.com/PHP-CS-Fixer/PHP-CS-Fixer) (правила `@Symfony`). Конфигурация - `app/.php-cs-fixer.dist.php`. Запуск внутри контейнера (из каталога приложения):
 
 ```bash
 docker compose exec frankenphp bash
@@ -76,16 +83,23 @@ php bin/console cache:pool:clear cache.app
 
 ---
 
+## Участие в разработке
+
+Исправления, идеи и доработки приветствуются: Issues и Pull Request в репозитории проекта.
+
+---
+
 <a id="english"></a>
 
 ## Web Service for Generating Symfony Projects with Docker
 
 Pick project options and get a ZIP with a ready-to-run Symfony app for Docker. Run with `docker compose up`.
 
-**Interface screenshot**
+**Interface screenshots**
 
 <p style="text-align: center">
-  <img src="docs/screenshot.png" alt="Symfony Initializr main page" />
+  <a href="docs/light-screenshot.png"><img src="docs/light-screenshot.png" alt="Symfony Initializr main page" width="960" /></a>
+  <a href="docs/dark-screenshot.png"><img src="docs/dark-screenshot.png" alt="Symfony Initializr main page" width="960" /></a>
 </p>
 
 ---
@@ -101,6 +115,12 @@ Pick project options and get a ZIP with a ready-to-run Symfony app for Docker. R
 - **Download**: button disabled until response; archive via fetch. Rate limit shows message and retry time.
 - **Caching**: by parameter set (PHP, server, Symfony, extensions, database, cache, RabbitMQ). Cache in `var/share/` (Symfony 7.4+).
 - **Rate limit**: 30 requests per hour per IP.
+
+---
+
+## Trust & transparency
+
+The project is open source: you can inspect the [generator source code](app/src/) and how the archive is built before using it. The generated ZIP contains only the standard Symfony skeleton, dependencies from Packagist, and the added Docker/config files - no hidden code. We recommend reviewing the archive contents before deploying.
 
 ---
 
@@ -140,3 +160,9 @@ To clear the generated project cache (cache.app pool):
 ```bash
 php bin/console cache:pool:clear cache.app
 ```
+
+---
+
+## Contributing
+
+Fixes, ideas and improvements are welcome via Issues and Pull Requests in the project repository.
