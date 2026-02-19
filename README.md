@@ -3,6 +3,7 @@
 [![PHP](https://img.shields.io/badge/PHP-8.5-777BB4?style=flat&logo=php)](https://www.php.net/)
 [![Symfony](https://img.shields.io/badge/Symfony-7.4-000000?style=flat&logo=symfony)](https://symfony.com/)
 [![FrankenPHP](https://img.shields.io/badge/FrankenPHP-1-2496ED?style=flat)](https://frankenphp.dev/)
+[![Bootstrap](https://img.shields.io/badge/Bootstrap-5-7952B3?style=flat&logo=bootstrap)](https://getbootstrap.com/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat&logo=docker)](https://www.docker.com/)
 
 **Язык / Language:** [Русский](#russian) · [English](#english)
@@ -18,8 +19,8 @@
 **Скриншоты интерфейса**
 
 <p style="text-align: center">
-  <a href="docs/light-screenshot.png"><img src="docs/light-screenshot.png" alt="Главная страница Symfony Initializr" width="960" /></a>
-  <a href="docs/dark-screenshot.png"><img src="docs/dark-screenshot.png" alt="Главная страница Symfony Initializr" width="960" /></a>
+  <a href="docs/light-screenshot.png"><img src="docs/light-screenshot.png" alt="Главная страница Symfony Initializr" width="1434" /></a>
+  <a href="docs/dark-screenshot.png"><img src="docs/dark-screenshot.png" alt="Главная страница Symfony Initializr" width="1434" /></a>
 </p>
 
 ---
@@ -72,7 +73,12 @@ docker compose exec frankenphp bash
 Прогрев кеша версий PHP/Symfony и сгенерированных проектов (по желанию):
 
 ```bash
+# только популярные конфигурации (по умолчанию)
 php bin/console app:warm-cache
+php bin/console app:warm-cache --popular-only
+
+# все комбинации PHP × Symfony × сервер (дольше)
+php bin/console app:warm-cache --all
 ```
 
 Сброс кеша сгенерированных проектов (пул cache.app):
@@ -98,8 +104,8 @@ Pick project options and get a ZIP with a ready-to-run Symfony app for Docker. R
 **Interface screenshots**
 
 <p style="text-align: center">
-  <a href="docs/light-screenshot.png"><img src="docs/light-screenshot.png" alt="Symfony Initializr main page" width="960" /></a>
-  <a href="docs/dark-screenshot.png"><img src="docs/dark-screenshot.png" alt="Symfony Initializr main page" width="960" /></a>
+  <a href="docs/light-screenshot.png"><img src="docs/light-screenshot.png" alt="Symfony Initializr main page" width="1434" /></a>
+  <a href="docs/dark-screenshot.png"><img src="docs/dark-screenshot.png" alt="Symfony Initializr main page" width="1434" /></a>
 </p>
 
 ---
@@ -152,7 +158,12 @@ docker compose exec frankenphp bash
 To warm the PHP/Symfony version cache and generated project cache (optional):
 
 ```bash
+# popular configurations only (default)
 php bin/console app:warm-cache
+php bin/console app:warm-cache --popular-only
+
+# all PHP × Symfony × server combinations (slower)
+php bin/console app:warm-cache --all
 ```
 
 To clear the generated project cache (cache.app pool):
