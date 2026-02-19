@@ -25,6 +25,7 @@ final readonly class ProjectConfigFactory
     ): ProjectConfig {
         $ext = array_values(array_unique($extensions));
         $db = 'none' === $database ? null : $database;
+        $projectName = $this->sanitizeProjectName($projectName);
 
         // ORM without DB: orm-pack expects a DB, default to PostgreSQL
         if (null === $db && in_array('orm', $ext, true)) {
@@ -51,5 +52,17 @@ final readonly class ProjectConfigFactory
             cache: 'none' === $cache ? null : $cache,
             rabbitmq: $rabbitmq,
         );
+    }
+
+    private function sanitizeProjectName(string $name): string
+    {
+        $cleaned = preg_replace('/[^a-zA-Z0-9_-]/', '-', $name);
+        if (null === $cleaned) {
+            return 'demo-symfony';
+        }
+
+        $trimmed = trim($cleaned, '-');
+
+        return ('' === $trimmed || strlen($trimmed) > 50) ? 'demo-symfony' : $trimmed;
     }
 }

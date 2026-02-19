@@ -5,20 +5,22 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Config\ProjectConfigFactory;
-use App\GeneratorOptions;
+use App\Request\GenerateProjectRequest;
 use App\Service\ProjectGeneratorService;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpKernel\Attribute\MapQueryString;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Validator\ConstraintViolation;
+use Symfony\Component\Validator\ConstraintViolationList;
+use Symfony\Component\Validator\Exception\ValidationFailedException;
 
 final readonly class GenerateController
 {
     private const int STREAM_CHUNK_SIZE = 8192;
 
     public function __construct(
-        private GeneratorOptions $options,
         private ProjectConfigFactory $configFactory,
         private ProjectGeneratorService $generator,
         private LoggerInterface $logger,
@@ -26,54 +28,21 @@ final readonly class GenerateController
     }
 
     #[Route(path: '/generate', name: 'app_generate', methods: ['GET'])]
-    public function __invoke(Request $request): Response
+    public function __invoke(#[MapQueryString] ?GenerateProjectRequest $request): Response
     {
-        $php = $request->query->getString('php');
-        $server = $request->query->getString('server');
-        $symfony = $request->query->getString('symfony');
-
-        if (!$this->options->isValidPhp($php)
-            || !$this->options->isValidServer($server)
-            || !$this->options->isValidSymfony($symfony)
-        ) {
-            $this->logger->warning('Invalid generation parameters', [
-                'php' => $php,
-                'server' => $server,
-                'symfony' => $symfony,
-            ]);
-
-            return new Response('Invalid parameters', Response::HTTP_BAD_REQUEST);
-        }
-
-        $rawName = $request->query->getString('name', 'demo-symfony');
-        $name = $this->sanitizeProjectName('' === $rawName ? 'demo-symfony' : $rawName);
-        $database = $request->query->getString('database', 'none');
-        $cache = $request->query->getString('cache', 'none');
-        $rabbitmq = $request->query->getBoolean('rabbitmq', false);
-        $extensions = $request->query->all('extensions') ?? [];
-
-        if (!$this->options->isValidDatabase($database)
-            || !$this->options->isValidCache($cache)
-            || !$this->options->areValidExtensions($extensions)
-        ) {
-            $this->logger->warning('Invalid optional parameters', [
-                'database' => $database,
-                'cache' => $cache,
-                'extensions' => $extensions,
-            ]);
-
-            return new Response('Invalid parameters', Response::HTTP_BAD_REQUEST);
+        if (null === $request) {
+            throw new ValidationFailedException(null, new ConstraintViolationList([new ConstraintViolation('Missing required query parameters: php, server, symfony.', '', [], null, '', null)]));
         }
 
         $config = $this->configFactory->fromRequest(
-            $php,
-            $server,
-            $symfony,
-            $name,
-            $database,
-            $cache,
-            $rabbitmq,
-            $extensions,
+            $request->php,
+            $request->server,
+            $request->symfony,
+            $request->name,
+            $request->database,
+            $request->cache,
+            $request->rabbitmq,
+            $request->extensions,
         );
 
         set_time_limit(600);
@@ -84,9 +53,9 @@ final readonly class GenerateController
 
             $this->logger->info('Project generated successfully', [
                 'duration' => round(microtime(true) - $startTime, 2),
-                'php' => $php,
-                'server' => $server,
-                'symfony' => $symfony,
+                'php' => $request->php,
+                'server' => $request->server,
+                'symfony' => $request->symfony,
             ]);
         } catch (\Throwable $e) {
             $this->logger->error('Project generation failed', [
@@ -94,10 +63,7 @@ final readonly class GenerateController
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return new Response(
-                'Generation failed: '.$e->getMessage(),
-                Response::HTTP_INTERNAL_SERVER_ERROR
-            );
+            return new Response('Generation failed: '.$e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
 
         return $this->streamZipResponse($zipPath, $config->projectName.'.zip');
@@ -144,17 +110,5 @@ final readonly class GenerateController
         }
 
         return $response;
-    }
-
-    private function sanitizeProjectName(string $name): string
-    {
-        $cleaned = preg_replace('/[^a-zA-Z0-9_-]/', '-', $name);
-        if (null === $cleaned) {
-            return 'demo-symfony';
-        }
-
-        $trimmed = trim($cleaned, '-');
-
-        return ('' === $trimmed || strlen($trimmed) > 50) ? 'demo-symfony' : $trimmed;
     }
 }

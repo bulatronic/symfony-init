@@ -21,8 +21,7 @@
 **Скриншоты интерфейса**
 
 <p style="text-align: center">
-  <a href="docs/light-screenshot.png"><img src="docs/light-screenshot.png" alt="Главная страница Symfony Initializr" width="1434" /></a>
-  <a href="docs/dark-screenshot.png"><img src="docs/dark-screenshot.png" alt="Главная страница Symfony Initializr" width="1434" /></a>
+  <a href="docs/screenshot.png"><img src="docs/screenshot.png" alt="Главная страница Symfony Initializr" width="1434" /></a>
 </p>
 
 ---
@@ -89,6 +88,16 @@ php bin/console app:warm-cache --all
 php bin/console cache:pool:clear cache.app
 ```
 
+### Тесты
+
+```bash
+php vendor/bin/phpunit --configuration phpunit.dist.xml
+```
+
+Покрыты юнит-тестами:
+- `ProjectConfigFactory` — бизнес-правила (ORM ↔ БД, RabbitMQ → Messenger, нормализация имени проекта)
+- `ValidGeneratorOptionValidator` — кастомный constraint для доменной валидации параметров запроса
+
 ---
 
 ## Участие в разработке
@@ -106,8 +115,7 @@ Pick project options and get a ZIP with a ready-to-run Symfony app for Docker. R
 **Interface screenshots**
 
 <p style="text-align: center">
-  <a href="docs/light-screenshot.png"><img src="docs/light-screenshot.png" alt="Symfony Initializr main page" width="1434" /></a>
-  <a href="docs/dark-screenshot.png"><img src="docs/dark-screenshot.png" alt="Symfony Initializr main page" width="1434" /></a>
+  <a href="docs/screenshot.png"><img src="docs/screenshot.png" alt="Symfony Initializr main page" width="1434" /></a>
 </p>
 
 ---
@@ -173,6 +181,16 @@ To clear the generated project cache (cache.app pool):
 ```bash
 php bin/console cache:pool:clear cache.app
 ```
+
+### Tests
+
+```bash
+php vendor/bin/phpunit --configuration phpunit.dist.xml
+```
+
+Unit tests cover:
+- `ProjectConfigFactory` — business rules (ORM ↔ DB, RabbitMQ → Messenger, project name normalization)
+- `ValidGeneratorOptionValidator` — custom constraint for domain validation of request parameters
 
 ---
 
