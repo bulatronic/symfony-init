@@ -1,0 +1,26 @@
+services:
+  frankenphp:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: symfony-init
+    restart: unless-stopped
+    # Expose ports 80 and 443 for SSL
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./app:/app
+      - shared-data:/app/var/share  # Shared cache (persistent across restarts)
+      # Important: mount directories for storing SSL certificates
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - APP_ENV=prod
+      - APP_DEBUG=0
+    command: [ "frankenphp", "run", "--config", "/app/Caddyfile.prod" ]
+
+volumes:
+  shared-data:  # Persistent storage for application cache
+  caddy_data:   # Storage for SSL certificates
+  caddy_config: # Caddy configuration

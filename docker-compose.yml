@@ -13,7 +13,7 @@ services:
     environment:
       - APP_ENV=dev
       - APP_DEBUG=1
-    command: ["frankenphp", "run", "--config", "/app/Caddyfile"]
+    command: [ "frankenphp", "run", "--config", "/app/Caddyfile" ]
 
 volumes:
   shared-data:  # Persistent storage for application cache

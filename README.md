@@ -6,6 +6,8 @@
 [![Bootstrap](https://img.shields.io/badge/Bootstrap-5-7952B3?style=flat&logo=bootstrap)](https://getbootstrap.com/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat&logo=docker)](https://www.docker.com/)
 
+**Live:** [symfony-init.dev](https://symfony-init.dev)
+
 **Язык / Language:** [Русский](#russian) · [English](#english)
 
 ---

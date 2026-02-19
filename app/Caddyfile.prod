@@ -1,8 +1,12 @@
 {
     frankenphp
+# Email for Let's Encrypt notifications (optional)
+# email example@example.com
 }
 
-:80 {
+# Main domain
+
+symfony-init.dev {
     root * /app/public
 
     encode zstd br gzip
@@ -17,4 +21,10 @@
             output stdout
             format console
         }
+}
+
+# Redirect from www to main domain (optional)
+
+www.symfony-init.dev {
+    redir https://symfony-init.dev {uri} permanent
 }
