@@ -93,6 +93,11 @@ final readonly class GenerateController
                 }
             } finally {
                 fclose($handle);
+            }
+        });
+
+        register_shutdown_function(static function () use ($zipPath): void {
+            if (file_exists($zipPath)) {
                 @unlink($zipPath);
             }
         });

@@ -31,7 +31,7 @@ final class WarmCacheCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addOption('all', null, InputOption::VALUE_NONE, 'Generate all possible combinations (slow)')
+            ->addOption('all-base', null, InputOption::VALUE_NONE, 'Generate all base combinations (PHP × Symfony × server, no extensions/DB)')
             ->addOption('popular-only', null, InputOption::VALUE_NONE, 'Generate only most popular configurations (default)');
     }
 
@@ -40,9 +40,9 @@ final class WarmCacheCommand extends Command
         $io = new SymfonyStyle($input, $output);
         $io->title('Warming Project Cache');
 
-        $generateAll = $input->getOption('all');
-        $configs = $generateAll
-            ? $this->getAllConfigurations()
+        $generateAllBase = $input->getOption('all-base');
+        $configs = $generateAllBase
+            ? $this->getAllBaseConfigurations()
             : $this->getPopularConfigurations();
 
         $io->info(sprintf('Generating %d configurations...', count($configs)));
@@ -153,7 +153,7 @@ final class WarmCacheCommand extends Command
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function getAllConfigurations(): array
+    private function getAllBaseConfigurations(): array
     {
         $configs = [];
         $phpVersions = $this->options->phpVersions;

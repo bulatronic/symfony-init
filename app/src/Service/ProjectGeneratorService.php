@@ -6,12 +6,12 @@ namespace App\Service;
 
 use App\Builder\ProjectBuilder;
 use App\Config\ProjectConfig;
+use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\LoggerInterface;
 use Random\RandomException;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Contracts\Cache\CacheInterface;
-use Symfony\Contracts\Cache\ItemInterface;
+use Symfony\Component\Lock\LockFactory;
 
 /**
  * Orchestrator: cache + build via ProjectBuilder + ZIP creation.
@@ -26,9 +26,11 @@ final readonly class ProjectGeneratorService
         private string $projectDir,
         private ProjectBuilder $builder,
         private ProjectZipper $zipper,
-        private CacheInterface $cache,
+        #[Autowire(service: 'cache.projects')]
+        private CacheItemPoolInterface $cache,
         private LoggerInterface $logger,
         private Filesystem $filesystem,
+        private LockFactory $lockFactory,
     ) {
     }
 
@@ -40,21 +42,40 @@ final readonly class ProjectGeneratorService
     public function generate(ProjectConfig $config): string
     {
         try {
-            $cachedPath = $this->cache->get(
-                $config->cacheKey(),
-                function (ItemInterface $item) use ($config): string {
-                    $item->expiresAfter(self::CACHE_TTL);
-                    $this->logger->info('Generating new base project for caching', [
-                        'php' => $config->phpVersion,
-                        'server' => $config->server,
-                        'symfony' => $config->symfonyVersion,
-                    ]);
+            $cacheKey = $config->cacheKey();
 
-                    return $this->buildAndCache($config);
+            // Fast path: cache hit without acquiring lock
+            $item = $this->cache->getItem($cacheKey);
+            if ($item->isHit()) {
+                return $this->zipper->createZip($item->get(), $config->projectName);
+            }
+
+            $lock = $this->lockFactory->createLock('build_'.$cacheKey, ttl: 180);
+            $lock->acquire(blocking: true);
+
+            try {
+                // Double-check after acquiring lock — another process may have built it already
+                $item = $this->cache->getItem($cacheKey);
+                if ($item->isHit()) {
+                    return $this->zipper->createZip($item->get(), $config->projectName);
                 }
-            );
 
-            return $this->zipper->createZip($cachedPath, $config->projectName);
+                $this->logger->info('Generating new base project for caching', [
+                    'php' => $config->phpVersion,
+                    'server' => $config->server,
+                    'symfony' => $config->symfonyVersion,
+                ]);
+
+                $cachedPath = $this->buildAndCache($config);
+
+                $item->set($cachedPath);
+                $item->expiresAfter(self::CACHE_TTL);
+                $this->cache->save($item);
+
+                return $this->zipper->createZip($cachedPath, $config->projectName);
+            } finally {
+                $lock->release();
+            }
         } catch (\Throwable $e) {
             $this->logger->error('Project generation failed', [
                 'error' => $e->getMessage(),

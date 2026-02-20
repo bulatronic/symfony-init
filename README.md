@@ -78,8 +78,8 @@ docker compose exec frankenphp bash
 php bin/console app:warm-cache
 php bin/console app:warm-cache --popular-only
 
-# все комбинации PHP × Symfony × сервер (дольше)
-php bin/console app:warm-cache --all
+# все базовые комбинации PHP × Symfony × сервер, без расширений/БД (дольше)
+php bin/console app:warm-cache --all-base
 ```
 
 Сброс кеша сгенерированных проектов (пул cache.app):
@@ -95,8 +95,8 @@ php vendor/bin/phpunit --configuration phpunit.dist.xml
 ```
 
 Покрыты юнит-тестами:
-- `ProjectConfigFactory` — бизнес-правила (ORM ↔ БД, RabbitMQ → Messenger, нормализация имени проекта)
-- `ValidGeneratorOptionValidator` — кастомный constraint для доменной валидации параметров запроса
+- `ProjectConfigFactory` - бизнес-правила (ORM ↔ БД, RabbitMQ → Messenger, нормализация имени проекта)
+- `ValidGeneratorOptionValidator` - кастомный constraint для доменной валидации параметров запроса
 
 ---
 
@@ -172,8 +172,8 @@ To warm the PHP/Symfony version cache and generated project cache (optional):
 php bin/console app:warm-cache
 php bin/console app:warm-cache --popular-only
 
-# all PHP × Symfony × server combinations (slower)
-php bin/console app:warm-cache --all
+# all base PHP × Symfony × server combinations, no extensions/DB (slower)
+php bin/console app:warm-cache --all-base
 ```
 
 To clear the generated project cache (cache.app pool):
@@ -189,8 +189,8 @@ php vendor/bin/phpunit --configuration phpunit.dist.xml
 ```
 
 Unit tests cover:
-- `ProjectConfigFactory` — business rules (ORM ↔ DB, RabbitMQ → Messenger, project name normalization)
-- `ValidGeneratorOptionValidator` — custom constraint for domain validation of request parameters
+- `ProjectConfigFactory` - business rules (ORM ↔ DB, RabbitMQ → Messenger, project name normalization)
+- `ValidGeneratorOptionValidator` - custom constraint for domain validation of request parameters
 
 ---
 

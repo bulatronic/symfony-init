@@ -65,6 +65,7 @@ final readonly class ProjectBuilder
             ],
             null,
             null,
+            null,
             self::COMPOSER_TIMEOUT
         );
 
@@ -217,6 +218,7 @@ final readonly class ProjectBuilder
             ['composer', 'require', $package, '--no-interaction', '--prefer-dist'],
             $targetDir,
             ['SYMFONY_SKIP_DOCKER' => '1'],
+            null,
             self::COMPOSER_TIMEOUT
         );
 
@@ -236,6 +238,7 @@ final readonly class ProjectBuilder
         $process = new Process(
             ['composer', 'update', '--lock', '--no-install', '--no-interaction'],
             $targetDir,
+            null,
             null,
             self::COMPOSER_TIMEOUT
         );
@@ -331,6 +334,7 @@ final readonly class ProjectBuilder
                 '--prefer-dist',
             ],
             $targetDir,
+            null,
             null,
             self::COMPOSER_TIMEOUT
         );
