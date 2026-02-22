@@ -18,7 +18,7 @@
 
 Выберите параметры проекта и получите ZIP с готовым Symfony-приложением под Docker. Запуск: `docker compose up`.
 
-**Скриншоты интерфейса**
+**Скриншот интерфейса**
 
 <p style="text-align: center">
   <a href="docs/screenshot.png"><img src="docs/screenshot.png" alt="Главная страница Symfony Initializr" width="1434" /></a>
@@ -29,9 +29,9 @@
 ## Возможности
 
 - **Параметры**: имя проекта, PHP, сервер (PHP-FPM + Nginx или FrankenPHP), версия Symfony (LTS и текущие - с symfony.com).
-- **База данных**: без БД, PostgreSQL, MySQL, MariaDB, SQLite. Связка с чекбоксом Doctrine ORM: выбор БД включает ORM, выбор ORM подставляет PostgreSQL при «без БД». В Docker - образы на Alpine где есть (postgres, redis, memcached, rabbitmq).
+- **База данных**: без БД, PostgreSQL, MySQL, MariaDB, SQLite. Связка с чекбоксом Doctrine ORM: выбор БД включает ORM, выбор ORM подставляет PostgreSQL при "без БД". В Docker - образы на Alpine где есть (postgres, redis, memcached, rabbitmq).
 - **Кеш**: селект None / Redis / Memcached. В проект добавляются контейнер, PHP-расширение и `CACHE_DSN` в `.env`.
-- **Расширения**: Doctrine ORM, Security, Mailer, Messenger, Validator, Serializer, API Platform, HTTP Client, Nelmio API Doc. Зависимости подставляются автоматически (API Platform → ORM + Serializer + Nelmio; RabbitMQ → Messenger).
+- **Расширения**: Doctrine ORM, Security, Mailer, Messenger, Validator, Serializer, API Platform, HTTP Client, Nelmio API Doc. Зависимости подставляются автоматически (API Platform -> ORM + Serializer + Nelmio; RabbitMQ -> Messenger).
 - **Message broker**: опция RabbitMQ - контейнер RabbitMQ с management и `MESSENGER_TRANSPORT_DSN` в `.env`.
 - **Генерация**: скелет через `composer create-project`, подстановка Dockerfile, docker-compose, конфиг веб-сервера (Nginx / Caddyfile). Рецепты Flex не дублируют наши сервисы (`SYMFONY_SKIP_DOCKER=1`, очистка блоков рецептов в compose).
 - **Скачивание**: кнопка блокируется до ответа, архив через fetch. При лимите - сообщение и время повтора.
@@ -95,7 +95,7 @@ php vendor/bin/phpunit --configuration phpunit.dist.xml
 ```
 
 Покрыты юнит-тестами:
-- `ProjectConfigFactory` - бизнес-правила (ORM ↔ БД, RabbitMQ → Messenger, нормализация имени проекта)
+- `ProjectConfigFactory` - бизнес-правила (ORM <-> БД, RabbitMQ -> Messenger, нормализация имени проекта)
 - `ValidGeneratorOptionValidator` - кастомный constraint для доменной валидации параметров запроса
 
 ---
@@ -112,7 +112,7 @@ php vendor/bin/phpunit --configuration phpunit.dist.xml
 
 Pick project options and get a ZIP with a ready-to-run Symfony app for Docker. Run with `docker compose up`.
 
-**Interface screenshots**
+**Interface screenshot**
 
 <p style="text-align: center">
   <a href="docs/screenshot.png"><img src="docs/screenshot.png" alt="Symfony Initializr main page" width="1434" /></a>
@@ -125,7 +125,7 @@ Pick project options and get a ZIP with a ready-to-run Symfony app for Docker. R
 - **Parameters**: project name, PHP version, server (PHP-FPM + Nginx or FrankenPHP), Symfony version (LTS and current, from symfony.com).
 - **Database**: none, PostgreSQL, MySQL, MariaDB, SQLite. UI syncs with Doctrine ORM: choosing a DB checks ORM; checking ORM selects PostgreSQL when DB is none. Docker uses Alpine-based images where available (postgres, redis, memcached, rabbitmq).
 - **Cache**: selector None / Redis / Memcached. Adds the container, PHP extension, and `CACHE_DSN` in `.env`.
-- **Extensions**: Doctrine ORM, Security, Mailer, Messenger, Validator, Serializer, API Platform, HTTP Client, Nelmio API Doc. Dependencies are auto-selected (API Platform → ORM + Serializer + Nelmio; RabbitMQ → Messenger).
+- **Extensions**: Doctrine ORM, Security, Mailer, Messenger, Validator, Serializer, API Platform, HTTP Client, Nelmio API Doc. Dependencies are auto-selected (API Platform -> ORM + Serializer + Nelmio; RabbitMQ -> Messenger).
 - **Message broker**: RabbitMQ option adds the RabbitMQ container with management UI and `MESSENGER_TRANSPORT_DSN` in `.env`.
 - **Generation**: skeleton via `composer create-project`, Dockerfile and docker-compose injection, web server config (Nginx / Caddyfile). Flex recipes do not duplicate our services (`SYMFONY_SKIP_DOCKER=1`, recipe blocks stripped from compose).
 - **Download**: button disabled until response; archive via fetch. Rate limit shows message and retry time.
@@ -189,7 +189,7 @@ php vendor/bin/phpunit --configuration phpunit.dist.xml
 ```
 
 Unit tests cover:
-- `ProjectConfigFactory` - business rules (ORM ↔ DB, RabbitMQ → Messenger, project name normalization)
+- `ProjectConfigFactory` - business rules (ORM <-> DB, RabbitMQ -> Messenger, project name normalization)
 - `ValidGeneratorOptionValidator` - custom constraint for domain validation of request parameters
 
 ---
