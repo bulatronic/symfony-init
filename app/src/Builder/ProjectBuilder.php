@@ -202,8 +202,9 @@ final readonly class ProjectBuilder
     private function installPackages(ProjectConfig $config, string $targetDir, array $resolved): void
     {
         $packages = $this->registry->getPackages($resolved, $config->symfonyVersion, $config->rabbitmq);
+        $devPackages = $this->registry->getDevPackages($resolved, $config->symfonyVersion);
 
-        if (empty($packages)) {
+        if (empty($packages) && empty($devPackages)) {
             return;
         }
 
@@ -211,13 +212,22 @@ final readonly class ProjectBuilder
             $this->composerRequire($targetDir, $package);
         }
 
+        foreach ($devPackages as $package) {
+            $this->composerRequire($targetDir, $package, dev: true);
+        }
+
         $this->composerUpdateLock($targetDir);
     }
 
-    private function composerRequire(string $targetDir, string $package): void
+    private function composerRequire(string $targetDir, string $package, bool $dev = false): void
     {
+        $cmd = ['composer', 'require', $package, '--no-interaction', '--prefer-dist'];
+        if ($dev) {
+            $cmd[] = '--dev';
+        }
+
         $process = new Process(
-            ['composer', 'require', $package, '--no-interaction', '--prefer-dist'],
+            $cmd,
             $targetDir,
             ['SYMFONY_SKIP_DOCKER' => '1'],
             null,
@@ -267,7 +277,7 @@ final readonly class ProjectBuilder
 
     private function appendDatabaseUrl(string $env, ?string $database): string
     {
-        if (null === $database || preg_match('/^DATABASE_URL=/m', $env)) {
+        if (null === $database) {
             return $env;
         }
 
@@ -279,7 +289,16 @@ final readonly class ProjectBuilder
             default => null,
         };
 
-        return null !== $url ? $env."\nDATABASE_URL=\"{$url}\"\n" : $env;
+        if (null === $url) {
+            return $env;
+        }
+
+        // Replace existing DATABASE_URL (e.g. added by Symfony Flex with 127.0.0.1) with the correct Docker hostname
+        if (preg_match('/^DATABASE_URL=/m', $env)) {
+            return (string) preg_replace('/^DATABASE_URL=.*/m', "DATABASE_URL=\"{$url}\"", $env);
+        }
+
+        return $env."\nDATABASE_URL=\"{$url}\"\n";
     }
 
     private function appendCacheDsn(string $env, ?string $cache): string
@@ -328,7 +347,6 @@ final readonly class ProjectBuilder
             [
                 'composer',
                 'install',
-                '--no-dev',
                 '--optimize-autoloader',
                 '--no-interaction',
                 '--prefer-dist',

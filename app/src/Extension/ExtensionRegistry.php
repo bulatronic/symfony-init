@@ -66,7 +66,30 @@ final readonly class ExtensionRegistry
             $this->resolveOne($name, $resolved);
         }
 
-        return array_values($resolved);
+        return array_keys($resolved);
+    }
+
+    /**
+     * Collects Composer --dev packages for the resolved extension list.
+     *
+     * @param list<string> $resolved Result of resolve()
+     *
+     * @return list<string>
+     */
+    public function getDevPackages(array $resolved, string $symfonyVersion): array
+    {
+        $packages = [];
+        foreach ($resolved as $name) {
+            $ext = $this->extensions[$name] ?? null;
+            if (null === $ext) {
+                continue;
+            }
+            foreach ($ext->getDevPackages($symfonyVersion) as $pkg) {
+                $packages[] = $pkg;
+            }
+        }
+
+        return array_values(array_unique($packages));
     }
 
     /**

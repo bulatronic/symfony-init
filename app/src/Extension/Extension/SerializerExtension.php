@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Extension\Extension;
 
-use App\Extension\ExtensionInterface;
+use App\Extension\AbstractExtension;
 
-final class SerializerExtension implements ExtensionInterface
+final class SerializerExtension extends AbstractExtension
 {
     public function getName(): string
     {

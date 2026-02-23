@@ -23,6 +23,13 @@ interface ExtensionInterface
     public function getPackages(string $symfonyVersion): array;
 
     /**
+     * Composer packages to require as --dev dependencies.
+     *
+     * @return list<string>
+     */
+    public function getDevPackages(string $symfonyVersion): array;
+
+    /**
      * PHP extensions required in the Docker image.
      *
      * @return list<string> e.g. ['pdo_pgsql']

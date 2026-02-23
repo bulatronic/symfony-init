@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Extension\Extension;
 
-use App\Extension\ExtensionInterface;
+use App\Extension\AbstractExtension;
 
-final class OrmExtension implements ExtensionInterface
+final class OrmExtension extends AbstractExtension
 {
     public function getName(): string
     {
@@ -36,5 +36,10 @@ final class OrmExtension implements ExtensionInterface
     public function getPackages(string $symfonyVersion): array
     {
         return ['symfony/orm-pack'];
+    }
+
+    public function getDevPackages(string $symfonyVersion): array
+    {
+        return ['symfony/maker-bundle'];
     }
 }

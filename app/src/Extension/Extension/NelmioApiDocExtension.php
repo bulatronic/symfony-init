@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Extension\Extension;
 
-use App\Extension\ExtensionInterface;
+use App\Extension\AbstractExtension;
 
-final class NelmioApiDocExtension implements ExtensionInterface
+final class NelmioApiDocExtension extends AbstractExtension
 {
     public function getName(): string
     {

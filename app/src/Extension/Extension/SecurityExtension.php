@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Extension\Extension;
 
-use App\Extension\ExtensionInterface;
+use App\Extension\AbstractExtension;
 
-final class SecurityExtension implements ExtensionInterface
+final class SecurityExtension extends AbstractExtension
 {
     public function getName(): string
     {
