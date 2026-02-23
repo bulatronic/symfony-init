@@ -18,6 +18,8 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --no-script
 
 COPY . .
 
+RUN composer dump-autoload --optimize --no-dev --classmap-authoritative
+
 RUN mkdir -p /app/public /app/var/cache /app/var/log \
     && chown -R www-data:www-data /app/var \
     && chmod -R 775 /app/var \
