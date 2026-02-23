@@ -152,11 +152,13 @@ final readonly class ProjectBuilder
                 'Dockerfile' => 'Dockerfile.frankenphp.twig',
                 'Caddyfile' => 'Caddyfile.frankenphp.twig',
                 'docker-compose.yml' => 'docker-compose.frankenphp.twig',
+                'docker-entrypoint.sh' => 'docker-entrypoint.sh.twig',
             ],
             default => [
                 'Dockerfile' => 'Dockerfile.fpm.twig',
                 'docker-compose.yml' => 'docker-compose.fpm.twig',
                 'nginx.conf' => 'nginx.fpm.twig',
+                'docker-entrypoint.sh' => 'docker-entrypoint.sh.twig',
             ],
         };
     }
@@ -328,9 +330,7 @@ final readonly class ProjectBuilder
                 'install',
                 '--no-dev',
                 '--optimize-autoloader',
-                '--classmap-authoritative',
                 '--no-interaction',
-                '--no-scripts',
                 '--prefer-dist',
             ],
             $targetDir,

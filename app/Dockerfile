@@ -18,9 +18,12 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --no-script
 
 COPY . .
 
-RUN composer dump-autoload --optimize --no-dev --classmap-authoritative
-
 RUN mkdir -p /app/public /app/var/cache /app/var/log \
     && chown -R www-data:www-data /app/var \
     && chmod -R 775 /app/var \
     && chown www-data:www-data /app
+
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["docker-entrypoint.sh"]
