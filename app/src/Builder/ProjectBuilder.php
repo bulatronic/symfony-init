@@ -102,6 +102,10 @@ final readonly class ProjectBuilder
 
         $data['require']['php'] = '>='.$config->phpVersion;
 
+        if (isset($data['extra']['symfony']) && is_array($data['extra']['symfony'])) {
+            $data['extra']['symfony']['allow-contrib'] = true;
+        }
+
         // Composer schema requires require-dev to be an object {}; empty array [] is invalid
         if (isset($data['require-dev']) && is_array($data['require-dev']) && empty($data['require-dev'])) {
             $data['require-dev'] = new \stdClass();
@@ -229,7 +233,7 @@ final readonly class ProjectBuilder
         $process = new Process(
             $cmd,
             $targetDir,
-            ['SYMFONY_SKIP_DOCKER' => '1'],
+            ['SYMFONY_SKIP_DOCKER' => '1', 'SYMFONY_ALLOW_CONTRIB' => '1'],
             null,
             self::COMPOSER_TIMEOUT
         );
