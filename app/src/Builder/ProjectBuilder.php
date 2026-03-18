@@ -18,7 +18,7 @@ use Twig\Loader\FilesystemLoader;
  */
 final readonly class ProjectBuilder
 {
-    private const int COMPOSER_TIMEOUT = 120;
+    private const int DEFAULT_COMPOSER_TIMEOUT = 120;
 
     private Environment $twig;
 
@@ -35,6 +35,7 @@ final readonly class ProjectBuilder
 
     /**
      * Builds the project into the given directory.
+     * @throws \Throwable
      */
     public function build(ProjectConfig $config, string $targetDir): void
     {
@@ -51,6 +52,9 @@ final readonly class ProjectBuilder
         $this->cleanupFlexDockerFiles($targetDir);
     }
 
+    /**
+     * @throws \Throwable
+     */
     private function createProject(ProjectConfig $config, string $targetDir): void
     {
         $process = new Process(
@@ -66,10 +70,10 @@ final readonly class ProjectBuilder
             null,
             null,
             null,
-            self::COMPOSER_TIMEOUT
+            $this->getComposerTimeoutSeconds()
         );
 
-        $process->run();
+        $this->runProcess($process, 'composer create-project');
 
         if (!$process->isSuccessful()) {
             $this->logger->error('Composer create-project failed', [
@@ -202,6 +206,7 @@ final readonly class ProjectBuilder
 
     /**
      * @param list<string> $resolved
+     * @throws \Throwable
      */
     private function installPackages(ProjectConfig $config, string $targetDir, array $resolved): void
     {
@@ -223,6 +228,9 @@ final readonly class ProjectBuilder
         $this->composerUpdateLock($targetDir);
     }
 
+    /**
+     * @throws \Throwable
+     */
     private function composerRequire(string $targetDir, string $package, bool $dev = false): void
     {
         $cmd = ['composer', 'require', $package, '--no-interaction', '--prefer-dist'];
@@ -235,10 +243,10 @@ final readonly class ProjectBuilder
             $targetDir,
             ['SYMFONY_SKIP_DOCKER' => '1', 'SYMFONY_ALLOW_CONTRIB' => '1'],
             null,
-            self::COMPOSER_TIMEOUT
+            $this->getComposerTimeoutSeconds()
         );
 
-        $process->run();
+        $this->runProcess($process, 'composer require', ['package' => $package, 'dev' => $dev]);
 
         if (!$process->isSuccessful()) {
             $this->logger->error('Composer require failed', [
@@ -249,6 +257,9 @@ final readonly class ProjectBuilder
         }
     }
 
+    /**
+     * @throws \Throwable
+     */
     private function composerUpdateLock(string $targetDir): void
     {
         $process = new Process(
@@ -256,10 +267,10 @@ final readonly class ProjectBuilder
             $targetDir,
             null,
             null,
-            self::COMPOSER_TIMEOUT
+            $this->getComposerTimeoutSeconds()
         );
 
-        $process->run();
+        $this->runProcess($process, 'composer update --lock');
 
         if (!$process->isSuccessful()) {
             $this->logger->error('Composer update --lock failed', ['error' => $process->getErrorOutput()]);
@@ -345,6 +356,9 @@ final readonly class ProjectBuilder
         return $env;
     }
 
+    /**
+     * @throws \Throwable
+     */
     private function runComposerInstall(string $targetDir): void
     {
         $process = new Process(
@@ -358,10 +372,10 @@ final readonly class ProjectBuilder
             $targetDir,
             null,
             null,
-            self::COMPOSER_TIMEOUT
+            $this->getComposerTimeoutSeconds()
         );
 
-        $process->run();
+        $this->runProcess($process, 'composer install');
 
         if (!$process->isSuccessful()) {
             $this->logger->error('Composer install failed', ['error' => $process->getErrorOutput()]);
@@ -403,6 +417,52 @@ final readonly class ProjectBuilder
             return $this->twig->render($template, $context);
         } catch (\Throwable $e) {
             throw new \RuntimeException(sprintf('Failed to render template %s: %s', $template, $e->getMessage()), 0, $e);
+        }
+    }
+
+    private function getComposerTimeoutSeconds(): int
+    {
+        $raw = $_ENV['APP_COMPOSER_TIMEOUT'] ?? $_SERVER['APP_COMPOSER_TIMEOUT'] ?? null;
+        if (null === $raw) {
+            $raw = getenv('APP_COMPOSER_TIMEOUT') ?: null;
+        }
+        if (null === $raw || '' === trim($raw)) {
+            return self::DEFAULT_COMPOSER_TIMEOUT;
+        }
+
+        $value = filter_var($raw, \FILTER_VALIDATE_INT);
+        if (false === $value) {
+            return self::DEFAULT_COMPOSER_TIMEOUT;
+        }
+
+        return max(30, (int) $value);
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     * @throws \Throwable
+     */
+    private function runProcess(Process $process, string $label, array $context = []): void
+    {
+        $start = microtime(true);
+
+        try {
+            $process->run();
+        } catch (\Throwable $e) {
+            $this->logger->error('Process execution failed', $context + [
+                'label' => $label,
+                'duration' => round(microtime(true) - $start, 2),
+                'command' => $process->getCommandLine(),
+                'timeout' => $this->getComposerTimeoutSeconds(),
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        } finally {
+            $this->logger->info('Process finished', $context + [
+                'label' => $label,
+                'duration' => round(microtime(true) - $start, 2),
+                'exit_code' => $process->getExitCode(),
+            ]);
         }
     }
 }

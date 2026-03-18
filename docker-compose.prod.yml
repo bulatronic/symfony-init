@@ -18,6 +18,7 @@ services:
     environment:
       - APP_ENV=prod
       - APP_DEBUG=0
+      - APP_COMPOSER_TIMEOUT=600
     command: [ "frankenphp", "run", "--config", "/app/Caddyfile.prod" ]
 
 volumes:
